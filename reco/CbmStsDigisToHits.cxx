@@ -316,6 +316,9 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   fTimer.Start();
 	Int_t nGood    = 0;
 	Int_t nIgnored = 0;
+
+  //Reset even Needed?
+  #pragma omp parallel for schedule(static) if(parallelism_enabled)
   for (Int_t it = 0; it < fModules.size(); it++){
     fModuleIndex[it]->Reset();
   }
@@ -332,6 +335,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 
   // --- Loop over input digis
   Int_t digiIndex = -1;
+  #pragma omp parallel for schedule(static) if(parallelism_enabled)
   for (Int_t iDigi = 0; iDigi < nDigis; iDigi++){
 
     digiIndex = (event ? event->GetIndex(kStsDigi, iDigi) : iDigi);
@@ -356,9 +360,12 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   fTimer.Stop();
   Double_t time2 = fTimer.RealTime();
 
-  // --- Process remaining clusters in the buffers
+
   fTimer.Start();
   Int_t clusterCount = 0;
+  #pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHits", 1e1))
+
+  #pragma omp parallel for schedule(static) reduction(combineHitOutput:fHits) if(parallelism_enabled)
   for (Int_t it = 0; it < fModules.size(); it++){
       //clusterCount += fModuleIndex[it]->ProcessDigis(event);
       fHits->AbsorbObjects(fModuleIndex[it]->ProcessDigis(event));

@@ -158,6 +158,7 @@ class CbmStsDigisToHits : public FairTask
     std::vector<CbmStsClusterFinderModule*> fModuleIndex;
     Bool_t clusterOutputMode;
     TClonesArray* fHits;
+    Bool_t parallelism_enabled = kTRUE;
 
     /** @brief Sort clusters into modules
      ** @param event  Pointer to event object. If null, use entire

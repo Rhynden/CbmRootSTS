@@ -7,6 +7,7 @@
 #define CBMSTSCLUSTERFINDERMODULE_H 1
 
 #include <vector>
+#include <mutex>
 #include "TNamed.h"
 #include "CbmStsModule.h"
 
@@ -154,6 +155,7 @@ class CbmStsClusterFinderModule : public TNamed
     CbmStsClusterAnalysis* fAna;
     TClonesArray* fClusterOutput;
     TClonesArray* fHitOutput;
+    std::mutex lock;
     //std::vector<Int_t> fDigiIndex;
 
 

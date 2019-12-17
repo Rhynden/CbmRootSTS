@@ -235,13 +235,13 @@ void CbmStsClusterFinderModule::ProcessBuffer() {
 // --------------- Add single digi to buffer ------------------------------
 void CbmStsClusterFinderModule::AddDigiToQueue(const CbmStsDigi* digi, Int_t digiIndex) {
 
-  //lock.lock();
+  lock.lock();
 
   fDigiQueue.push_back(std::make_tuple(digi, digiIndex));
   //fDigiIndex.push_back(digiIndex);
 
 
-  //lock.unlock();
+  lock.unlock();
 }
 // -------------------------------------------------------------------------
 
