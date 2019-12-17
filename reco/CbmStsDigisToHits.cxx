@@ -363,12 +363,13 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 
   fTimer.Start();
   Int_t clusterCount = 0;
-  #pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHits", 1e1))
+  #pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
 
-  #pragma omp parallel for schedule(static) reduction(combineHitOutput:fHits) if(parallelism_enabled)
+  #pragma omp parallel for reduction(combineHitOutput:fHits) if(parallelism_enabled)
   for (Int_t it = 0; it < fModules.size(); it++){
       //clusterCount += fModuleIndex[it]->ProcessDigis(event);
       fHits->AbsorbObjects(fModuleIndex[it]->ProcessDigis(event));
+      //fModuleIndex[it]->ProcessDigis(event);
 
   }
   //LOG(INFO) << "cluster count = " << clusterCount;
@@ -437,9 +438,9 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   fTimeTot         += realTime;
 
   // --- Screen output
-  LOG(debug) << GetName() << ": created " << nClusters << " from index "
+  LOG(info) << GetName() << ": created " << nClusters << " from index "
       << indexFirst << " to " << indexLast;
-  LOG(debug) << GetName() << ": reset " << time1 << ", process digis " << time2
+  LOG(info) << GetName() << ": reset " << time1 << ", process digis " << time2
       << ", process buffers " << time3 << ", analyse " << time4 << ", register "
       << time5;
 

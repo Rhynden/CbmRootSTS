@@ -148,6 +148,8 @@ set(LINKDEF ${LIBRARY_NAME}LinkDef.h)
 
 
 # -----  Let cmake do the job   ---------------------------
+SET(GCC_COVERAGE_COMPILE_FLAGS "-fopenmp")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 include_directories( ${INCLUDE_DIRECTORIES})
 include_directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 link_directories( ${LINK_DIRECTORIES})

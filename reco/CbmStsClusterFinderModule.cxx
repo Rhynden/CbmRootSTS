@@ -274,6 +274,7 @@ TClonesArray* CbmStsClusterFinderModule::ProcessDigis(CbmEvent* event) {
   // Int_t clusters = fModule->GetNofClsters();
   //LOG(INFO) << "Clusters in Module" << moduleNumber << " is " << fModule->GetClusters().size();
   //LOG(INFO) << "CutInNs = " << fTimeCutClustersInNs << " CutInSigma = " << fTimeCutClustersInSigma;
+  //LOG(info) << "Processing module nr " << fModule;
   Int_t nModuleHits = fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
 
 
