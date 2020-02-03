@@ -10,14 +10,17 @@
 #include "TStopwatch.h"
 #include "FairTask.h"
 #include "CbmStsReco.h"
+#include "CbmStsHit.h"
 
 class TClonesArray;
 class CbmDigiManager;
 class CbmEvent;
 class CbmStsClusterAnalysis;
 class CbmStsClusterFinderModule;
+class CbmStsDigi;
 class CbmStsDigitizeParameters;
 class CbmStsSetup;
+class CbmStsHit;
 
 
 /** @class CbmStsDigisToHits
@@ -156,9 +159,11 @@ class CbmStsDigisToHits : public FairTask
 
     //Florian
     std::vector<CbmStsClusterFinderModule*> fModuleIndex;
+    std::vector<const CbmStsDigi*> fDigiVector;
     Bool_t clusterOutputMode;
     TClonesArray* fHits;
-    Bool_t parallelism_enabled = kTRUE;
+    std::vector<CbmStsHit> fHitsVector;
+    Bool_t parallelism_enabled = 1;
 
     /** @brief Sort clusters into modules
      ** @param event  Pointer to event object. If null, use entire

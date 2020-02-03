@@ -38,7 +38,8 @@ CbmStsClusterFinderModule::CbmStsClusterFinderModule(UShort_t nChannels,
                                                      const char* name,
                                                      CbmStsModule* module,
                                                      Int_t mNumber,
-                                                     CbmStsClusterAnalysis* clusterAna) :
+                                                     CbmStsClusterAnalysis* clusterAna,
+                                                     Bool_t clusterOutputMode) :
   TNamed(name, "cluster finder module"),
   fSize(nChannels),
   fTimeCutDigisInNs(timeCutDigisInNs),
@@ -51,6 +52,7 @@ CbmStsClusterFinderModule::CbmStsClusterFinderModule(UShort_t nChannels,
   fIndex(fSize),
   fTime(fSize),
   fAna(clusterAna),
+  fClusterOutputMode(clusterOutputMode),
   moduleNumber(mNumber)
 {
   fDigiQueue.reserve(60000);
@@ -248,13 +250,20 @@ void CbmStsClusterFinderModule::AddDigiToQueue(const CbmStsDigi* digi, Int_t dig
 
 // -----   Process all digis of module   -----------------------------------
 TClonesArray* CbmStsClusterFinderModule::ProcessDigis(CbmEvent* event) {
+  auto start_total = std::chrono::high_resolution_clock::now();
 
   // Sort the Digi Buffer by time
-  //LOG(INFO) << "Sorting digiQueue" << FairLogger::endl;
+  LOG(INFO) << "Sorting digiQueue" << FairLogger::endl;
+  auto start = std::chrono::high_resolution_clock::now();
   std::sort(fDigiQueue.begin(), fDigiQueue.end(), [] (std::tuple<const CbmStsDigi*, Int_t> digi1, std::tuple<const CbmStsDigi*, Int_t> digi2) {return std::get<1>(digi1) < std::get<1>(digi2);});
+  auto stop = std::chrono::high_resolution_clock::now();
 
+  std::chrono::nanoseconds duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  LOG(info) << "Time taken sorting in module " << duration.count();
   //Process each individual digi
-  //LOG(INFO) << "Processing individual digis" << FairLogger::endl;
+  LOG(INFO) << "Processing individual digis" << FairLogger::endl;
+
+  start = std::chrono::high_resolution_clock::now();
   for (Int_t iDigi = 0; iDigi < fDigiQueue.size(); iDigi++){
     ProcessDigi(std::get<0>(fDigiQueue[iDigi])->GetChannel(), std::get<0>(fDigiQueue[iDigi])->GetTime(), std::get<1>(fDigiQueue[iDigi]));
   }
@@ -265,17 +274,27 @@ TClonesArray* CbmStsClusterFinderModule::ProcessDigis(CbmEvent* event) {
     if ( fIndex[channel] == - 1 ) continue;
     FinishCluster(channel);
   }
-
-  //LOG(INFO) << "Sorting Cluster in Modules" << FairLogger::endl;
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  LOG(info) << "Time taken finding clusters in module " << duration.count() << std::endl;
+  LOG(INFO) << "Sorting Cluster in Modules" << FairLogger::endl;
   // Process Clusters to Hits
-  
+  start = std::chrono::high_resolution_clock::now();
   fModule->SortClustersByTime();
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  LOG(info)  << "Time taken sorting clusters by time in module " << duration.count() << std::endl;
   //LOG(INFO) << "Calculating hits from clusters" << FairLogger::endl;
   // Int_t clusters = fModule->GetNofClsters();
   //LOG(INFO) << "Clusters in Module" << moduleNumber << " is " << fModule->GetClusters().size();
   //LOG(INFO) << "CutInNs = " << fTimeCutClustersInNs << " CutInSigma = " << fTimeCutClustersInSigma;
   //LOG(info) << "Processing module nr " << fModule;
+  start = std::chrono::high_resolution_clock::now();
   Int_t nModuleHits = fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  LOG(info) << "Finding Hits in Module " << fModule << " took " << duration.count() << " milliseconds";
+  LOG(info) << "Time taken finding hits in module " << duration.count() << std::endl;
 
 
   //return fDigiQueue.size(); 
@@ -283,10 +302,66 @@ TClonesArray* CbmStsClusterFinderModule::ProcessDigis(CbmEvent* event) {
   //return fHitOutput->GetEntriesFast();
   //LOG(INFO) << "nModule Hits = " << nModuleHits;
   //return nModuleHits;
+  auto stop_total = std::chrono::high_resolution_clock::now();
+
+  std::chrono::nanoseconds duration_total = std::chrono::duration_cast<std::chrono::nanoseconds>(stop_total - start_total);
+  LOG(info) << "Time taken processing digis in module " << duration_total.count();
   return fHitOutput;
 }
 // -------------------------------------------------------------------------
 
+
+TClonesArray* CbmStsClusterFinderModule::ProcessDigisToClusters(CbmEvent* event){
+  auto start_total = std::chrono::high_resolution_clock::now();
+
+  // Sort the Digi Buffer by time
+  //LOG(INFO) << "Sorting digiQueue" << FairLogger::endl;
+  auto start = std::chrono::high_resolution_clock::now();
+  std::sort(fDigiQueue.begin(), fDigiQueue.end(), [] (std::tuple<const CbmStsDigi*, Int_t> digi1, std::tuple<const CbmStsDigi*, Int_t> digi2) {return std::get<1>(digi1) < std::get<1>(digi2);});
+  auto stop = std::chrono::high_resolution_clock::now();
+
+  std::chrono::nanoseconds duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  //LOG(info) << "Time taken sorting in module " << duration.count();
+  //Process each individual digi
+  //LOG(INFO) << "Processing individual digis" << FairLogger::endl;
+
+  start = std::chrono::high_resolution_clock::now();
+  for (Int_t iDigi = 0; iDigi < fDigiQueue.size(); iDigi++){
+    ProcessDigi(std::get<0>(fDigiQueue[iDigi])->GetChannel(), std::get<0>(fDigiQueue[iDigi])->GetTime(), std::get<1>(fDigiQueue[iDigi]));
+  }
+
+  //LOG(INFO) << "Processing remaining digis" << FairLogger::endl;
+  // Process Remaining Digis
+  for (UShort_t channel = 0; channel < fSize; channel++) {
+    if ( fIndex[channel] == - 1 ) continue;
+    FinishCluster(channel);
+  }
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  //LOG(info) << "Time taken finding clusters in module " << duration.count() << std::endl;
+  //LOG(INFO) << "Sorting Cluster in Modules" << FairLogger::endl;
+  // Process Clusters to Hits
+  start = std::chrono::high_resolution_clock::now();
+  fModule->SortClustersByTime();
+  stop = std::chrono::high_resolution_clock::now();
+  duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  //LOG(info)  << "Time taken sorting clusters by time in module " << duration.count() << std::endl;
+
+  return fClusterOutput;
+}
+
+
+
+TClonesArray* CbmStsClusterFinderModule::ProcessClustersToHits(CbmEvent* event) {
+  auto start = std::chrono::high_resolution_clock::now();
+  Int_t nModuleHits = fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+  //LOG(info) << "Finding Hits in Module " << fModule << " took " << duration.count() << " milliseconds";
+  //LOG(info) << "Time taken finding hits in module " << duration.count() << std::endl;
+
+  return fHitOutput;
+}
 
 // ----- Process an input digi   -------------------------------------------
 Bool_t CbmStsClusterFinderModule::ProcessDigi(UShort_t channel, Double_t time,

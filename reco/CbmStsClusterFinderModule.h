@@ -7,6 +7,7 @@
 #define CBMSTSCLUSTERFINDERMODULE_H 1
 
 #include <vector>
+#include <chrono>
 #include <mutex>
 #include "TNamed.h"
 #include "CbmStsModule.h"
@@ -67,7 +68,7 @@ class CbmStsClusterFinderModule : public TNamed
      */
     CbmStsClusterFinderModule(UShort_t nChannels, Double_t timeCutDigisInNs, Double_t timeCutDigisInSigma, Double_t timeCutClustersInNs, Double_t timeCutClustersInSigma,
                               const char* name, CbmStsModule* module = NULL,
-                              Int_t moduleNumber = 0, CbmStsClusterAnalysis* clusterAna = NULL);
+                              Int_t moduleNumber = 0, CbmStsClusterAnalysis* clusterAna = NULL, Bool_t clusterOutputMode = kFALSE);
 
     CbmStsClusterFinderModule(const CbmStsClusterFinderModule&) = delete; 
     CbmStsClusterFinderModule& operator=(const CbmStsClusterFinderModule&) = delete; 
@@ -132,6 +133,8 @@ class CbmStsClusterFinderModule : public TNamed
     void AddDigiToQueue(const CbmStsDigi* digi, Int_t digiIndex);
     TClonesArray* ProcessDigis(CbmEvent* event);
     TClonesArray* GetClusterOutput() { return fClusterOutput;}
+    TClonesArray* ProcessDigisToClusters(CbmEvent* event);
+    TClonesArray* ProcessClustersToHits(CbmEvent* event);
 
 
   private:
@@ -150,12 +153,15 @@ class CbmStsClusterFinderModule : public TNamed
 
     //Florian
     std::vector<std::tuple<const CbmStsDigi*, Int_t>> fDigiQueue;
+    std::vector<const CbmStsDigi*> fDigiQueue2;
+    std::chrono::system_clock::time_point findHitsDuration;
     Int_t clusterCount = 1;
     Int_t moduleNumber;
     CbmStsClusterAnalysis* fAna;
     TClonesArray* fClusterOutput;
     TClonesArray* fHitOutput;
     std::mutex lock;
+    Bool_t fClusterOutputMode;
     //std::vector<Int_t> fDigiIndex;
 
 
