@@ -40,7 +40,7 @@ class CbmStsDigisToHits : public FairTask
   public:
 
     /** @brief Constructor **/
-    CbmStsDigisToHits(ECbmMode mode = kCbmTimeslice, Bool_t clusterOutputMode = kFALSE);
+    CbmStsDigisToHits(ECbmMode mode = kCbmTimeslice, Bool_t clusterOutputMode = kFALSE, Bool_t parallelism_enabled = kFALSE);
 
 
     /** @brief Destructor  **/
@@ -156,7 +156,8 @@ class CbmStsDigisToHits : public FairTask
     std::vector<CbmStsDigisToHitsModule*> fModuleIndex;
     Bool_t clusterOutputMode;
     TClonesArray* fHits;
-    Bool_t parallelism_enabled = kTRUE;
+    Bool_t parallelism_enabled;
+    //Bool_t parallelism_enabled = kTRUE;
 
     /** @brief Sort clusters into modules
      ** @param event  Pointer to event object. If null, use entire

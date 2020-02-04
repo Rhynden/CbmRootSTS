@@ -32,7 +32,7 @@ using std::setw;
 
 
 // -----   Constructor   ---------------------------------------------------
-CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode)
+CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode, Bool_t _parallelism_enabled)
     : FairTask("StsDigisToHits", 1)
     , fEvents(nullptr)
     , fDigiManager(nullptr)
@@ -48,6 +48,7 @@ CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode)
     , fTimeCutClustersInNs(-1.)
     , fModuleIndex()
     , clusterOutputMode(_clusterOutputMode)
+    , parallelism_enabled(_parallelism_enabled)
     , fNofHits(0.)
     , fNofTimeslices(0)
     , fNofEvents(0)
@@ -277,14 +278,14 @@ InitStatus CbmStsDigisToHits::Init()
   //assert(fClusters);
 
   // --- Register output array
-  fClusters = new TClonesArray("CbmStsCluster", 1e6);
+  fClusters = new TClonesArray("CbmStsCluster", 1);
   ioman->Register("StsCluster",
                   "Clusters in STS",
                   fClusters,
                   IsOutputBranchPersistent("StsCluster"));
 
   // --- Register output array
-  fHits = new TClonesArray("CbmStsHit", 10000);
+  fHits = new TClonesArray("CbmStsHit", 1);
   ioman->Register("StsHit",
                   "Hits in STS",
                   fHits,
@@ -320,7 +321,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 	Int_t nIgnored = 0;
 
   //Reset even Needed?
-//  #pragma omp parallel for schedule(static) if(parallelism_enabled)
+  #pragma omp parallel for schedule(static) if(parallelism_enabled)
   for (UInt_t it = 0; it < fModules.size(); it++){
     fModuleIndex[it]->Reset();
   }
@@ -337,7 +338,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 
   // --- Loop over input digis and distribute them to the different modules/sensors
   Int_t digiIndex = -1;
-//  #pragma omp parallel for schedule(static) if(parallelism_enabled)
+  #pragma omp parallel for schedule(static) if(parallelism_enabled)
   for (Int_t iDigi = 0; iDigi < nDigis; iDigi++){
 
     digiIndex = (event ? event->GetIndex(kStsDigi, iDigi) : iDigi);
@@ -372,13 +373,14 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   // from the modules in exactely the same order. Otherwise the reindexing of the cluster ids in the hit
   // objects can't be done
   if (!clusterOutputMode) {
-//  #pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
-
-//  #pragma omp parallel for reduction(combineHitOutput:fHits) if(parallelism_enabled)
-
+    #pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
+    TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
+    #pragma omp parallel for reduction(combineHitOutput:fHitsCopy) if(parallelism_enabled)
     for (UInt_t it = 0; it < fModules.size(); it++){
-      fHits->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
+      fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
     }
+
+    fHits = fHitsCopy;
   } else {
 
     // This part can run parallel

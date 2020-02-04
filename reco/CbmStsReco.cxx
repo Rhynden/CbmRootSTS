@@ -21,7 +21,7 @@
 // -----   Constructor   ---------------------------------------------------
 CbmStsReco::CbmStsReco() :
   FairTask("StsReco", 1),
-  fStsRecoMode(2),
+  fStsRecoMode(1),
   fMode(kCbmTimeslice),
   fUseSingleClusters(kFALSE),
   fSetup(nullptr),
@@ -141,7 +141,7 @@ InitStatus CbmStsReco::Init() {
   if(fStsRecoMode==1)  // --- Instantiate DigisToHits without cluster output 
      { 
      LOG(info) << "DigisToHits without cluster output";
-     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kFALSE);
+     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kFALSE, kFALSE);
      digisToHits->SetTimeCutDigisInSigma(fTimeCutDigisInSigma);
      if ( fTimeCutDigisInNs >= 0. ) digisToHits->SetTimeCutDigisInNs(fTimeCutDigisInNs);
 
