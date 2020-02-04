@@ -42,10 +42,11 @@ digitize/CbmStsSignal.cxx;
 set (SRCS_RECO
 reco/CbmStsClusterAnalysis.cxx
 reco/CbmStsClusterFinderModule.cxx
-#reco/CbmStsFindClusters.cxx
-#reco/CbmStsFindHits.cxx
-reco/CbmStsDigisToHits.cxx
+reco/CbmStsFindClusters.cxx
+reco/CbmStsFindHits.cxx
 reco/CbmStsFindHitsSingleCluster.cxx
+reco/CbmStsDigisToHitsModule.cxx
+reco/CbmStsDigisToHits.cxx
 reco/CbmStsFindTracksEvents.cxx
 reco/CbmStsMatchReco.cxx
 reco/CbmStsReco.cxx
@@ -147,14 +148,23 @@ set(LINKDEF ${LIBRARY_NAME}LinkDef.h)
 # ---------------------------------------------------------
 
 
+# ---- Enable OpenMP  -------------------------------------
+find_package(OpenMP)
+if (OPENMP_FOUND)
+  set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+# ---------------------------------------------------------
+
+
 # -----  Let cmake do the job   ---------------------------
-SET(GCC_COVERAGE_COMPILE_FLAGS "-fopenmp")
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}")
 include_directories( ${INCLUDE_DIRECTORIES})
 include_directories(SYSTEM ${SYSTEM_INCLUDE_DIRECTORIES})
 link_directories( ${LINK_DIRECTORIES})
 GENERATE_LIBRARY()
 # ---------------------------------------------------------
+
+
 Install(FILES digitize/CbmStsSignal.h
               digitize/CbmStsDigitizeParameters.h
               digitize/CbmStsPhysics.h

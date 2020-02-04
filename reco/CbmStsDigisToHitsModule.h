@@ -1,21 +1,20 @@
-/** @file CbmStsClusterFindeModule.h
- ** @author Volker Friese <v.friese@gsi.de>
- ** @date 05.04.20174
+/** @file CbmStsDigisToHitsModule.h
  **/
 
-#ifndef CBMSTSCLUSTERFINDERMODULE_H
-#define CBMSTSCLUSTERFINDERMODULE_H 1
+#ifndef CBMSTSDIGISTOHITSMODULE_H
+#define CBMSTSDIGISTOHITSMODULE_H 1
 
 #include <vector>
+#include <mutex>
 #include "TNamed.h"
 #include "CbmStsModule.h"
 
 class TClonesArray;
+class CbmStsClusterAnalysis;
 
-/** @class CbmStsClusterFinderModule
+/** @class CbmStsDigisToHitsModule
  ** @brief Class for finding clusters in one STS module
- ** @author Volker Friese <v.friese@gsi.de>
- ** @since 05.04.2017
+ ** @developed for (parallel) processing of clusters per module
  ** @version 1.0
  **
  ** A cluster is defined by a group of matching digis. Two digis
@@ -48,12 +47,12 @@ class TClonesArray;
  ** of the first channel, i.e. the cluster starts with high channel
  ** number.
  **/
-class CbmStsClusterFinderModule : public TNamed
+class CbmStsDigisToHitsModule : public TNamed
 {
   public:
 
     /** Default constructor **/
-    CbmStsClusterFinderModule();
+    CbmStsDigisToHitsModule();
 
 
     /** Constructor with parameters
@@ -63,15 +62,15 @@ class CbmStsClusterFinderModule : public TNamed
      ** @param module     Pointer to CbmModule object (in CbmStsSetup)
      ** @param output     Pointer to output array of CbmStsClusters
      */
-    CbmStsClusterFinderModule(UShort_t nChannels, Double_t timeCut, Double_t timeCutInSigma,
+    CbmStsDigisToHitsModule(UShort_t nChannels, Double_t timeCutDigisInNs, Double_t timeCutDigisInSigma, Double_t timeCutClustersInNs, Double_t timeCutClustersInSigma,
                               const char* name, CbmStsModule* module = NULL,
-                              TClonesArray* output = NULL);
+                              Int_t moduleNumber = 0, CbmStsClusterAnalysis* clusterAna = NULL);
 
-    CbmStsClusterFinderModule(const CbmStsClusterFinderModule&) = delete; 
-    CbmStsClusterFinderModule& operator=(const CbmStsClusterFinderModule&) = delete; 
+    CbmStsDigisToHitsModule(const CbmStsDigisToHitsModule&) = delete; 
+    CbmStsDigisToHitsModule& operator=(const CbmStsDigisToHitsModule&) = delete; 
 
     /** Destructor **/
-    virtual ~CbmStsClusterFinderModule();
+    virtual ~CbmStsDigisToHitsModule();
 
 
     /** @brief Allow connection of first and last channel on back side
@@ -126,18 +125,43 @@ class CbmStsClusterFinderModule : public TNamed
     /** Reset the internal bookkeeping **/
     void Reset();
 
+    //DigisToHits
+    void AddDigiToQueue(const CbmStsDigi* digi, Int_t digiIndex);
+
+    TClonesArray* ProcessDigisAndAbsorb(CbmEvent* event)
+    {
+      ProcessDigis(event);
+      return fHitOutput;
+    }
+    void ProcessDigis(CbmEvent* event);
+
+    TClonesArray* GetClusterOutput() { return fClusterOutput;}
+    TClonesArray* GetHitOutput() { return fHitOutput;}
+
 
   private:
 
     UShort_t fSize;               /// Number of channels
-    Double_t fTimeCutInSigma;     ///< Multiple of error of time difference
-    Double_t fTimeCut;            ///< User-set maximum time difference
+    Double_t fTimeCutDigisInSigma;     ///< Multiple of error of time difference
+    Double_t fTimeCutDigisInNs;            ///< User-set maximum time difference
+    Double_t fTimeCutClustersInNs;
+    Double_t fTimeCutClustersInSigma;
     Bool_t fConnectEdgeFront;     /// Round-the edge clustering front side
     Bool_t fConnectEdgeBack;      /// Round-the edge clustering back side
     CbmStsModule* fModule;        //! Pointer to STS module
     TClonesArray* fClusters;      //! Output array for clusters
     std::vector<Int_t> fIndex;    //! Channel -> digi index
     std::vector<Double_t> fTime;  //! Channel -> digi time
+
+    //DigisToHits
+    std::vector<std::tuple<const CbmStsDigi*, Int_t>> fDigiQueue;
+    Int_t clusterCount = 1;
+    Int_t moduleNumber;
+    CbmStsClusterAnalysis* fAna;
+    TClonesArray* fClusterOutput;
+    TClonesArray* fHitOutput;
+    std::mutex lock;
+    //std::vector<Int_t> fDigiIndex;
 
 
     /** Check for a matching digi in a given channel
@@ -166,8 +190,8 @@ class CbmStsClusterFinderModule : public TNamed
 
 
 
-   ClassDef(CbmStsClusterFinderModule, 1);
+   ClassDef(CbmStsDigisToHitsModule, 1);
 
 };
 
-#endif /* CBMSTSCLUSTERFINDERMODULE_H */
+#endif /* CBMSTSDIGISTOHITSMODULE_H */

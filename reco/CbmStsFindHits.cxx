@@ -194,6 +194,7 @@ Int_t CbmStsFindHits::ProcessData(CbmEvent* event) {
   for (Int_t iModule = 0; iModule < fSetup->GetNofModules(); iModule++) {
     CbmStsModule* module = fSetup->GetModule(iModule);
     if ( module->GetNofClusters() == 0 ) continue;
+    module->SortClustersByTime();  //Added time-sorting, DigisToHits
     Int_t nHitsModule = module->FindHits(fHits, event,
 																				 fTimeCutInNs, fTimeCutInSigma);
     LOG(debug1) << GetName() << ": Module " << module->GetName()

@@ -1,64 +1,90 @@
-/** @file CbmStsClusterFindeModule.cxx
- ** @author Volker Friese <v.friese@gsi.de>
- ** @date 05.04.20174
+/** @file CbmStsDigisToHitsModule.cxx
  **/
 
-#include "CbmStsClusterFinderModule.h"
+#include "CbmStsDigisToHitsModule.h"
+#include <tuple>
 
 #include <cassert>
 #include "TClonesArray.h"
 #include "FairLogger.h"
 #include "CbmStsAddress.h"
 #include "CbmStsCluster.h"
+#include "CbmStsClusterAnalysis.h"
 
 
 
-ClassImp(CbmStsClusterFinderModule)
+ClassImp(CbmStsDigisToHitsModule)
 
 
 // -----   Default constructor   -------------------------------------------
-CbmStsClusterFinderModule::CbmStsClusterFinderModule() :
-  TNamed(), fSize(0), fTimeCutInSigma(3.), fTimeCut(-1.),
-  fConnectEdgeFront(kFALSE), fConnectEdgeBack(kFALSE),
-  fModule(NULL), fClusters(NULL), fIndex(), fTime()
+CbmStsDigisToHitsModule::CbmStsDigisToHitsModule() 
+  : TNamed("CbmStsDigisToHitsModule", "CbmStsDigisToHitsModule")
+  , fSize(0)
+  , fTimeCutDigisInSigma(3.)
+  , fTimeCutDigisInNs(-1.)
+  , fTimeCutClustersInNs(-1.)
+  , fTimeCutClustersInSigma(4.)
+  , fConnectEdgeFront(kFALSE)
+  , fConnectEdgeBack(kFALSE)
+  , fModule(nullptr)
+  , fClusters(nullptr)
+  , fIndex()
+  , fTime()
+  , fDigiQueue()
+  , moduleNumber()
+  , fAna(nullptr)
+  , fClusterOutput(new TClonesArray("CbmStsCluster", 6e3))
+  , fHitOutput(new TClonesArray("CbmStsHit", 6e3))  
 {
+  fDigiQueue.reserve(60000);
 }
 // -------------------------------------------------------------------------
 
 
 
 // -----   Constructor with parameters   -----------------------------------
-CbmStsClusterFinderModule::CbmStsClusterFinderModule(UShort_t nChannels,
-                                                     Double_t timeCut,
-                                                     Double_t timeCutInSigma,
+CbmStsDigisToHitsModule::CbmStsDigisToHitsModule(UShort_t nChannels,
+                                                     Double_t timeCutDigisInNs,
+                                                     Double_t timeCutDigisInSigma,
+                                                     Double_t timeCutClustersInNs,
+                                                     Double_t timeCutClustersInSigma,
                                                      const char* name,
                                                      CbmStsModule* module,
-                                                     TClonesArray* output) :
-  TNamed(name, "cluster finder module"),
-  fSize(nChannels),
-  fTimeCutInSigma(timeCutInSigma),
-  fTimeCut(timeCut),
-  fConnectEdgeFront(kFALSE),
-  fConnectEdgeBack(kFALSE),
-  fModule(module),
-  fClusters(output),
-  fIndex(fSize),
-  fTime(fSize)
+                                                     Int_t mNumber,
+                                                     CbmStsClusterAnalysis* clusterAna) 
+  : TNamed(name, "CbmStsDigisToHitsModule")
+  , fSize(nChannels)
+  , fTimeCutDigisInSigma(timeCutDigisInSigma)
+  , fTimeCutDigisInNs(timeCutDigisInNs)
+  , fTimeCutClustersInNs(timeCutClustersInNs)
+  , fTimeCutClustersInSigma(timeCutClustersInSigma)
+  , fConnectEdgeFront(kFALSE)
+  , fConnectEdgeBack(kFALSE)
+  , fModule(module)
+  , fClusters(nullptr)
+  , fIndex(fSize)
+  , fTime(fSize)
+  , fDigiQueue()
+  , moduleNumber(mNumber)
+  , fAna(clusterAna)
+  , fClusterOutput(new TClonesArray("CbmStsCluster", 6e3))
+  , fHitOutput(new TClonesArray("CbmStsHit", 6e3))  
 {
+  fDigiQueue.reserve(60000);
 }
 // -------------------------------------------------------------------------
 
 
 
 // -----   Destructor   ----------------------------------------------------
-CbmStsClusterFinderModule::~CbmStsClusterFinderModule() {
+CbmStsDigisToHitsModule::~CbmStsDigisToHitsModule() {
 }
 // -------------------------------------------------------------------------
 
 
 
 // ----- Search for a matching cluster for a given channel   ---------------
-Bool_t CbmStsClusterFinderModule::CheckChannel(UShort_t channel,
+Bool_t CbmStsDigisToHitsModule::CheckChannel(UShort_t channel,
                                                Double_t time) {
 
   // Check channel number
@@ -69,8 +95,8 @@ Bool_t CbmStsClusterFinderModule::CheckChannel(UShort_t channel,
 
   assert( time >= fTime[channel] );
 
-  Double_t deltaT = fTimeCutInSigma * TMath::Sqrt(2.) * fModule->GetAsicParameters(channel).GetTimeResolution();
-  if ( fTimeCut > 0. ) deltaT = fTimeCut;
+  Double_t deltaT = fTimeCutDigisInSigma * TMath::Sqrt(2.) * fModule->GetAsicParameters(channel).GetTimeResolution();
+  if ( fTimeCutDigisInNs > 0. ) deltaT = fTimeCutDigisInNs;
 
   // Channel is active, but time is not matching: close cluster
   // and return no match.
@@ -87,16 +113,24 @@ Bool_t CbmStsClusterFinderModule::CheckChannel(UShort_t channel,
 
 
 // -----   Create a cluster object   ---------------------------------------
-void CbmStsClusterFinderModule::CreateCluster(UShort_t first,
+void CbmStsDigisToHitsModule::CreateCluster(UShort_t first,
                                               UShort_t last) {
 
   // --- Create cluster object; if possible, in the output array
   CbmStsCluster* cluster = NULL;
-  if ( fClusters ) {
+  /*if ( fClusters ) {
     Int_t index = fClusters->GetEntriesFast();
     cluster = new ((*fClusters)[index]) CbmStsCluster();
   } //? cluster array
-  else cluster = new CbmStsCluster();
+  else cluster = new CbmStsCluster(); */
+  //DigisToHits
+  Int_t index = fClusterOutput->GetEntriesFast();
+  cluster = new ((*fClusterOutput)[index]) CbmStsCluster();
+
+  cluster->SetIndex(index);
+
+  // Register cluster in module
+  fModule->AddCluster(cluster);
 
   // --- Add digis to cluster and reset the respective channel
   UShort_t channel = first;
@@ -114,15 +148,18 @@ void CbmStsClusterFinderModule::CreateCluster(UShort_t first,
   if ( fModule ) cluster->SetAddress(fModule->GetAddress());
 
   // --- Delete cluster object if no output array is there
-  if ( ! fClusters ) delete cluster;
+  //if ( ! fClusters ) delete cluster;
 
+  // Analyse cluster
+  //LOG(INFO) << "Analysing cluster";
+  fAna->Analyze(cluster, fModule);
 }
 // -------------------------------------------------------------------------
 
 
 
 // -----   Close a cluster   -----------------------------------------------
-void CbmStsClusterFinderModule::FinishCluster(UShort_t channel) {
+void CbmStsDigisToHitsModule::FinishCluster(UShort_t channel) {
 
   // Find start and stop channel of cluster
   UShort_t start = channel;
@@ -196,7 +233,7 @@ void CbmStsClusterFinderModule::FinishCluster(UShort_t channel) {
 
 
 // -----   Process active clusters   ---------------------------------------
-void CbmStsClusterFinderModule::ProcessBuffer() {
+void CbmStsDigisToHitsModule::ProcessBuffer() {
 
   for (UShort_t channel = 0; channel < fSize; channel++) {
     if ( fIndex[channel] == - 1 ) continue;
@@ -207,9 +244,65 @@ void CbmStsClusterFinderModule::ProcessBuffer() {
 // -------------------------------------------------------------------------
 
 
+// --------------- Add single digi to buffer ------------------------------
+void CbmStsDigisToHitsModule::AddDigiToQueue(const CbmStsDigi* digi, Int_t digiIndex) {
+
+  lock.lock();
+
+  fDigiQueue.push_back(std::make_tuple(digi, digiIndex));
+  //fDigiIndex.push_back(digiIndex);
+
+
+  lock.unlock();
+}
+// -------------------------------------------------------------------------
+
+
+// -----   Process all digis of module   -----------------------------------
+void CbmStsDigisToHitsModule::ProcessDigis(CbmEvent* event) {
+
+  // Sort the Digi Buffer by time
+  //LOG(INFO) << "Sorting digiQueue" << FairLogger::endl;
+  std::sort(fDigiQueue.begin(), fDigiQueue.end(), [] (std::tuple<const CbmStsDigi*, Int_t> digi1, std::tuple<const CbmStsDigi*, Int_t> digi2) {return std::get<1>(digi1) < std::get<1>(digi2);});
+
+  //Process each individual digi
+  //LOG(INFO) << "Processing individual digis" << FairLogger::endl;
+  for (UInt_t iDigi = 0; iDigi < fDigiQueue.size(); iDigi++){
+    ProcessDigi(std::get<0>(fDigiQueue[iDigi])->GetChannel(), std::get<0>(fDigiQueue[iDigi])->GetTime(), std::get<1>(fDigiQueue[iDigi]));
+  }
+
+  //LOG(INFO) << "Processing remaining digis" << FairLogger::endl;
+  // Process Remaining Digis
+  for (UShort_t channel = 0; channel < fSize; channel++) {
+    if ( fIndex[channel] == - 1 ) continue;
+    FinishCluster(channel);
+  }
+
+  //LOG(INFO) << "Sorting Cluster in Modules" << FairLogger::endl;
+  // Process Clusters to Hits
+  
+  fModule->SortClustersByTime();
+  //LOG(INFO) << "Calculating hits from clusters" << FairLogger::endl;
+  // Int_t clusters = fModule->GetNofClsters();
+  //LOG(INFO) << "Clusters in Module" << moduleNumber << " is " << fModule->GetClusters().size();
+  //LOG(INFO) << "CutInNs = " << fTimeCutClustersInNs << " CutInSigma = " << fTimeCutClustersInSigma;
+  LOG(DEBUG) << "Processing module number " << fModule;
+  //  Int_t nModuleHits = fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+  fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+
+
+  //return fDigiQueue.size(); 
+  //return fClusterOutput->GetEntriesFast();
+  //return fHitOutput->GetEntriesFast();
+  //LOG(INFO) << "nModule Hits = " << nModuleHits;
+  //return nModuleHits;
+//  return fHitOutput;
+}
+// -------------------------------------------------------------------------
+
 
 // ----- Process an input digi   -------------------------------------------
-Bool_t CbmStsClusterFinderModule::ProcessDigi(UShort_t channel, Double_t time,
+Bool_t CbmStsDigisToHitsModule::ProcessDigi(UShort_t channel, Double_t time,
                                               Int_t index) {
 
   // Assert channel number
@@ -247,10 +340,15 @@ Bool_t CbmStsClusterFinderModule::ProcessDigi(UShort_t channel, Double_t time,
 
 
 // -----   Reset the channel vectors   -------------------------------------
-void CbmStsClusterFinderModule::Reset() {
+void CbmStsDigisToHitsModule::Reset() {
 
   fIndex.assign(fSize, -1);
   fTime.assign(fSize, 0.);
 
+  //DigisToHits
+  fModule->ClearClusters();
+  fDigiQueue.clear();
+  fHitOutput->Clear();
+  fClusterOutput->Clear();
 }
 // -------------------------------------------------------------------------

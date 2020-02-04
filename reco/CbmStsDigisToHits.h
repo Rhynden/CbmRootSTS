@@ -1,6 +1,4 @@
-/** @file CbmFindClusters.h
- ** @author Volker Friese <v.friese@gsi.de>
- ** @since 16.06.2014
+/** @file CbmStsDigisToHits.h
  **/
 
 
@@ -10,17 +8,14 @@
 #include "TStopwatch.h"
 #include "FairTask.h"
 #include "CbmStsReco.h"
-#include "CbmStsHit.h"
 
 class TClonesArray;
 class CbmDigiManager;
 class CbmEvent;
 class CbmStsClusterAnalysis;
-class CbmStsClusterFinderModule;
-class CbmStsDigi;
+class CbmStsDigisToHitsModule;
 class CbmStsDigitizeParameters;
 class CbmStsSetup;
-class CbmStsHit;
 
 
 /** @class CbmStsDigisToHits
@@ -37,7 +32,7 @@ class CbmStsHit;
  ** Use SetEventMode() to choose event-by-event operation.
  **
  ** The actual cluster finding algorithm is defined in the class
- ** CbmStsClusterFinderModule.
+ ** CbmStsDigisToHitsModule.
  **/
 class CbmStsDigisToHits : public FairTask
 {
@@ -157,13 +152,11 @@ class CbmStsDigisToHits : public FairTask
     Double_t fTimeCutDigisInNs;                ///< User-set maximum time difference
     Double_t fTimeCutClustersInNs;    
 
-    //Florian
-    std::vector<CbmStsClusterFinderModule*> fModuleIndex;
-    std::vector<const CbmStsDigi*> fDigiVector;
+    //DigisToHits
+    std::vector<CbmStsDigisToHitsModule*> fModuleIndex;
     Bool_t clusterOutputMode;
     TClonesArray* fHits;
-    std::vector<CbmStsHit> fHitsVector;
-    Bool_t parallelism_enabled = 1;
+    Bool_t parallelism_enabled = kTRUE;
 
     /** @brief Sort clusters into modules
      ** @param event  Pointer to event object. If null, use entire
@@ -186,7 +179,7 @@ class CbmStsDigisToHits : public FairTask
     Double_t  fTimeTot;         ///< Total execution time
 
     // --- Map from module address to cluster finding module
-    std::map<Int_t, CbmStsClusterFinderModule*> fModules;  //!
+    std::map<Int_t, CbmStsDigisToHitsModule*> fModules;  //!
 
 
     /** @brief Instantiate cluster finding modules

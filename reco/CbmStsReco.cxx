@@ -11,8 +11,8 @@
 #include "FairRuntimeDb.h"
 #include "CbmDigiManager.h"
 #include "CbmStsDigitizeParameters.h"
-//#include "CbmStsFindClusters.h"
-//#include "CbmStsFindHits.h"
+#include "CbmStsFindClusters.h"
+#include "CbmStsFindHits.h"
 #include "CbmStsDigisToHits.h"
 #include "CbmStsFindHitsSingleCluster.h"
 #include "CbmStsSetup.h"
@@ -21,8 +21,9 @@
 // -----   Constructor   ---------------------------------------------------
 CbmStsReco::CbmStsReco() :
   FairTask("StsReco", 1),
-  fUseSingleClusters(kFALSE),
+  fStsRecoMode(2),
   fMode(kCbmTimeslice),
+  fUseSingleClusters(kFALSE),
   fSetup(nullptr),
   fDigiPar(nullptr),
   fGlobalPar(),
@@ -84,7 +85,7 @@ InitStatus CbmStsReco::Init() {
   // --- Something for the screen
   std::cout << std::endl;
   LOG(info) << "==========================================================";
- LOG(info) << GetName() << ": Initialising ";
+  LOG(info) << GetName() << ": Initialising ";
 
   // --- Check input branch (StsDigi). If not present, set task inactive.
   if ( ! digiMan->IsPresent(kSts) ) {
@@ -135,39 +136,67 @@ InitStatus CbmStsReco::Init() {
   fSetup->SetSensorConditions(fDigiPar);
   fSetup->SetModuleParameters(fDigiPar);
 
-  // --- Instantiate DigisToHits
-  CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kTRUE);
-  digisToHits->SetTimeCutDigisInSigma(fTimeCutDigisInSigma);
-  if ( fTimeCutDigisInNs >= 0. ) digisToHits->SetTimeCutDigisInNs(fTimeCutDigisInNs);
+  // --- Different cases of StsRecoMode
 
-  if ( ! fUseSingleClusters ) {
-    digisToHits->SetTimeCutClustersInNs(fTimeCutClustersInNs);
-    digisToHits->SetTimeCutClustersInSigma(fTimeCutClustersInSigma);
-    Add(digisToHits);
-  }
-  else {
-    if ( fMode == kCbmTimeslice) Add(new CbmStsFindHitsSingleCluster());
-    else LOG(FATAL) << GetName() << ": single-cluster hit finder is not "
-        << "available in event-by-event mode";
-  }
-  // --- Instantiate the cluster finder
-  /*CbmStsFindClusters* findClusters = new CbmStsFindClusters(fMode);
-  findClusters->SetTimeCutInSigma(fTimeCutDigisInSigma);
-  if ( fTimeCutDigisInNs >= 0. ) findClusters->SetTimeCut(fTimeCutDigisInNs);
-  Add(findClusters);
+  if(fStsRecoMode==1)  // --- Instantiate DigisToHits without cluster output 
+     { 
+     LOG(info) << "DigisToHits without cluster output";
+     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kFALSE);
+     digisToHits->SetTimeCutDigisInSigma(fTimeCutDigisInSigma);
+     if ( fTimeCutDigisInNs >= 0. ) digisToHits->SetTimeCutDigisInNs(fTimeCutDigisInNs);
 
-  // --- Instantiate the hit finder
-  if ( ! fUseSingleClusters ) {
-    CbmStsFindHits* findHits = new CbmStsFindHits(fMode);
-    findHits->SetTimeCutInNs(fTimeCutClustersInNs);
-    findHits->SetTimeCutInSigma(fTimeCutClustersInSigma);
-    Add(findHits);
-  }
-  else {
-    if ( fMode == kCbmTimeslice) Add(new CbmStsFindHitsSingleCluster());
-    else LOG(FATAL) << GetName() << ": single-cluster hit finder is not "
-        << "available in event-by-event mode";
-  } */
+     if ( ! fUseSingleClusters ) {
+       digisToHits->SetTimeCutClustersInNs(fTimeCutClustersInNs);
+       digisToHits->SetTimeCutClustersInSigma(fTimeCutClustersInSigma);
+       Add(digisToHits);
+     }
+     else {
+       if ( fMode == kCbmTimeslice) Add(new CbmStsFindHitsSingleCluster());
+       else LOG(FATAL) << GetName() << ": single-cluster hit finder is not "
+           << "available in event-by-event mode";
+     }
+     }
+     
+  else if (fStsRecoMode==2)  // --- Instantiate DigisToHits with cluster output 
+     {    
+     LOG(info) << "DigisToHits with cluster output";
+     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kTRUE);
+     digisToHits->SetTimeCutDigisInSigma(fTimeCutDigisInSigma);
+     if ( fTimeCutDigisInNs >= 0. ) digisToHits->SetTimeCutDigisInNs(fTimeCutDigisInNs);
+
+     if ( ! fUseSingleClusters ) {
+       digisToHits->SetTimeCutClustersInNs(fTimeCutClustersInNs);
+       digisToHits->SetTimeCutClustersInSigma(fTimeCutClustersInSigma);
+       Add(digisToHits);
+     }
+     else {
+       if ( fMode == kCbmTimeslice) Add(new CbmStsFindHitsSingleCluster());
+       else LOG(FATAL) << GetName() << ": single-cluster hit finder is not "
+           << "available in event-by-event mode";
+     }
+     }
+ 
+  else // --- Instantiate the cluster finder
+    {  
+    LOG(info) << "DigisToHits starting StsFindClusters and StsFindHits";
+    CbmStsFindClusters* findClusters = new CbmStsFindClusters(fMode);
+    findClusters->SetTimeCutInSigma(fTimeCutDigisInSigma);
+    if ( fTimeCutDigisInNs >= 0. ) findClusters->SetTimeCut(fTimeCutDigisInNs);
+    Add(findClusters);
+
+    // --- Instantiate the hit finder
+    if ( ! fUseSingleClusters ) {
+      CbmStsFindHits* findHits = new CbmStsFindHits(fMode);
+      findHits->SetTimeCutInNs(fTimeCutClustersInNs);
+      findHits->SetTimeCutInSigma(fTimeCutClustersInSigma);
+      Add(findHits);
+    }
+    else {
+      if ( fMode == kCbmTimeslice) Add(new CbmStsFindHitsSingleCluster());
+      else LOG(FATAL) << GetName() << ": single-cluster hit finder is not "
+          << "available in event-by-event mode";
+    }
+    }
 
   return kSUCCESS;
 }

@@ -933,7 +933,7 @@ Int_t CbmStsSetup::StoreModuleParameters(const char* fileName) {
 
     std::vector<CbmStsDigitizeParameters>& asics = module->GetParameters();
 
-    for (Int_t iAsic = 0; iAsic < asics.size(); iAsic++) {
+    for (UInt_t iAsic = 0; iAsic < asics.size(); iAsic++) {
       auto& asic = asics[iAsic];
       dynRange = asic.GetDynRange();
       threshold = asic.GetThreshold();

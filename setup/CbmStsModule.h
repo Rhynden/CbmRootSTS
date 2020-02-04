@@ -273,7 +273,7 @@ class CbmStsModule : public CbmStsElement
     /** String output **/
     std::string ToString() const;
 
-    //Florian
+    //DigisToHits
     std::vector<CbmStsCluster*> GetClusters() { return fClusters;}
 
     void SortClustersByTime() {

@@ -150,7 +150,7 @@ Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
   Int_t nClustersF = 0;
   Int_t nClustersB = 0;
 
-  //Florian 
+  //DigisToHits 
   Double_t maxTimeErrorClustersF = 0.;
   Double_t maxTimeErrorClustersB = 0.;
 
@@ -166,13 +166,13 @@ Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
     if ( side == 0) {
       frontClusters.push_back(iCluster);
       nClustersF++;
-      //Florian
+      //DigisToHits
       if ( cluster->GetTimeError() > maxTimeErrorClustersF ) maxTimeErrorClustersF = cluster->GetTimeError();
     }
     else if ( side == 1 ) {
       backClusters.push_back(iCluster);
       nClustersB++;
-      //Florian
+      //DigisToHits
       if ( cluster->GetTimeError() > maxTimeErrorClustersB ) maxTimeErrorClustersB = cluster->GetTimeError();
     }
     else
@@ -182,7 +182,7 @@ Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
       << frontClusters.size() << ", back " << backClusters.size() << ") ";
 
   // --- Loop over front and back side clusters
-  // Florian
+  // DigisToHits
   Int_t startB = 0;
   const Double_t max_sigma_both = 4. * TMath::Sqrt(maxTimeErrorClustersF * maxTimeErrorClustersF + maxTimeErrorClustersB * maxTimeErrorClustersB);
 

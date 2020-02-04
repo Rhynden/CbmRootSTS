@@ -35,8 +35,9 @@
 // Reconstruction
 #pragma link C++ class CbmStsClusterAnalysis;
 #pragma link C++ class CbmStsClusterFinderModule;
-// #pragma link C++ class CbmStsFindClusters;
-// #pragma link C++ class CbmStsFindHits;
+#pragma link C++ class CbmStsFindClusters;
+#pragma link C++ class CbmStsFindHits;
+#pragma link C++ class CbmStsDigisToHitsModule;
 #pragma link C++ class CbmStsDigisToHits;
 #pragma link C++ class CbmStsFindHitsSingleCluster;
 #pragma link C++ class CbmStsFindTracksEvents;

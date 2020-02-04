@@ -202,6 +202,7 @@ class CbmStsReco : public FairTask
 
   private:
 
+    Int_t fStsRecoMode;                   ///< Switch between Cluster/HitFinder including time-sorting, DigisToHits with or without and cluster output
     ECbmMode fMode;                       ///< time-slice or event
     Bool_t fUseSingleClusters;            ///< Construct hits from single clusters
     CbmStsSetup* fSetup;                  //! Setup instance
@@ -214,7 +215,7 @@ class CbmStsReco : public FairTask
     Double_t fTimeCutClustersInSigma;     ///< Time cut for clusters in hit in sigma
     Double_t fTimeCutClustersInNs   ;     ///< Time cut for clusters in hit in ns
     const char*  fSensorsParameterFile;   ///< Optional path for file with non default sensor settings
-
+    Int_t StsRecoMode;                    ///< Switch between Cluster/HitFinder,time-sorting, DigisToHits and cluster output
 
     /** @brief Copy constructor forbidden **/
     CbmStsReco(const CbmStsReco&) = delete;
