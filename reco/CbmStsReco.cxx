@@ -21,7 +21,7 @@
 // -----   Constructor   ---------------------------------------------------
 CbmStsReco::CbmStsReco() :
   FairTask("StsReco", 1),
-  fStsRecoMode(1),
+  fStsRecoMode(2),
   fMode(kCbmTimeslice),
   fUseSingleClusters(kFALSE),
   fSetup(nullptr),
@@ -140,8 +140,8 @@ InitStatus CbmStsReco::Init() {
 
   if(fStsRecoMode==1)  // --- Instantiate DigisToHits without cluster output 
      { 
-     LOG(info) << "DigisToHits without cluster output";
-     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kFALSE, kFALSE);
+     LOG(info) << "DigisToHits without cluster output and OpenMP";
+     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kFALSE, kTRUE);
      digisToHits->SetTimeCutDigisInSigma(fTimeCutDigisInSigma);
      if ( fTimeCutDigisInNs >= 0. ) digisToHits->SetTimeCutDigisInNs(fTimeCutDigisInNs);
 
@@ -159,8 +159,8 @@ InitStatus CbmStsReco::Init() {
      
   else if (fStsRecoMode==2)  // --- Instantiate DigisToHits with cluster output 
      {    
-     LOG(info) << "DigisToHits with cluster output";
-     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kTRUE);
+     LOG(info) << "DigisToHits with cluster output and without OpenMP";
+     CbmStsDigisToHits* digisToHits = new CbmStsDigisToHits(fMode, kTRUE, kFALSE);
      digisToHits->SetTimeCutDigisInSigma(fTimeCutDigisInSigma);
      if ( fTimeCutDigisInNs >= 0. ) digisToHits->SetTimeCutDigisInNs(fTimeCutDigisInNs);
 
@@ -178,7 +178,7 @@ InitStatus CbmStsReco::Init() {
  
   else // --- Instantiate the cluster finder
     {  
-    /*LOG(info) << "DigisToHits starting StsFindClusters and StsFindHits";
+    LOG(info) << "DigisToHits starting StsFindClusters and StsFindHits";
     CbmStsFindClusters* findClusters = new CbmStsFindClusters(fMode);
     findClusters->SetTimeCutInSigma(fTimeCutDigisInSigma);
     if ( fTimeCutDigisInNs >= 0. ) findClusters->SetTimeCut(fTimeCutDigisInNs);
@@ -195,7 +195,7 @@ InitStatus CbmStsReco::Init() {
       if ( fMode == kCbmTimeslice) Add(new CbmStsFindHitsSingleCluster());
       else LOG(FATAL) << GetName() << ": single-cluster hit finder is not "
           << "available in event-by-event mode";
-    }*/
+    }
     }
 
   return kSUCCESS;
@@ -221,3 +221,4 @@ void CbmStsReco::SetParContainers() {
 
 
 ClassImp(CbmStsReco)
+

@@ -17,11 +17,13 @@
 #include "CbmStsClusterAnalysis.h"
 #include "CbmStsDigisToHitsModule.h"
 #include "CbmStsDigi.h"
+#include "CbmStsHit.h"
 #include "CbmStsDigitizeParameters.h"
 #include "CbmStsModule.h"
 #include "CbmStsSensor.h"
 #include "CbmStsSensorDssdStereo.h"
 #include "CbmStsSetup.h"
+#include "CbmStsHit.h"
 
 using std::fixed;
 using std::left;
@@ -29,8 +31,9 @@ using std::right;
 using std::setprecision;
 using std::setw;
 
+
 // -----   Constructor   ---------------------------------------------------
-CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode, Bool_t _parallelism_enabled)
+CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t ClusterOutputMode, Bool_t Parallelism_enabled)
     : FairTask("StsDigisToHits", 1)
     , fEvents(nullptr)
     , fDigiManager(nullptr)
@@ -45,8 +48,8 @@ CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode, B
     , fTimeCutDigisInNs(-1.)
     , fTimeCutClustersInNs(-1.)
     , fModuleIndex()
-    , clusterOutputMode(_clusterOutputMode)
-    , parallelism_enabled(_parallelism_enabled)
+    , fClusterOutputMode(ClusterOutputMode)
+    , fParallelism_enabled(Parallelism_enabled)
     , fNofHits(0.)
     , fNofTimeslices(0)
     , fNofEvents(0)
@@ -58,7 +61,6 @@ CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode, B
     , fTimeTot(0.)
     , fModules()
 {
-  fHitsVector.reserve(20000000);
 }
 // -------------------------------------------------------------------------
 
@@ -320,7 +322,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 	Int_t nIgnored = 0;
 
   //Reset even Needed?
-  #pragma omp parallel for schedule(static) if(parallelism_enabled)
+//  #pragma omp parallel for schedule(static) if(fParallelism_enabled)
   for (UInt_t it = 0; it < fModules.size(); it++){
     fModuleIndex[it]->Reset();
   }
@@ -337,7 +339,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 
   // --- Loop over input digis and distribute them to the different modules/sensors
   Int_t digiIndex = -1;
-  #pragma omp parallel for schedule(static) if(parallelism_enabled)
+  //#pragma omp parallel for schedule(static) if(fParallelism_enabled)
   for (Int_t iDigi = 0; iDigi < nDigis; iDigi++){
 
     digiIndex = (event ? event->GetIndex(kStsDigi, iDigi) : iDigi);
@@ -371,28 +373,34 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   // If the cluster information is written to the output the hits and the clusters have to be absorbed
   // from the modules in exactely the same order. Otherwise the reindexing of the cluster ids in the hit
   // objects can't be done
-  if (!clusterOutputMode) {
-    LOG(info) << "Processing digis without ClusterOutputMode";
-    #pragma omp declare reduction(combineHitOutputVector: std::vector<CbmStsHit>: omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
-    #pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
-    //TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
-    #pragma omp parallel for reduction(combineHitOutputVector:fHitsVector) if(parallelism_enabled)
+  if (!fClusterOutputMode) {
+    //#pragma omp declare reduction(combineHitOutputVector: std::vector<CbmStsHit>: omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+    //#pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
+    TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
+    //#pragma omp parallel for reduction(combineHitOutput:fHitsCopy) if(fParallelism_enabled)
     for (UInt_t it = 0; it < fModules.size(); it++){
       //fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
       std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
-      //LOG(info) << "temp size is = " << temp.size();
       fHitsVector.insert(fHitsVector.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
     }
-
-    //fHits->AbsorbObjects(fHitsCopy);
-    //LOG(info) << "Hits in fHits " << fHits->GetEntriesFast();
-    LOG(info) << "Vector Hit size = " << fHitsVector.size();
+    LOG(info) << "Hit vector size is " << fHitsVector.size();
+    //Convert(fHitsVector);
+    fHits->AbsorbObjects(Convert(fHitsVector));
+    //fHits->AbsorbObjects(fHitsCopy);  //fHits = fHitsCopy;
   } else {
 
     // This part can run parallel
-    for (UInt_t it = 0; it < fModules.size(); it++){
+    /*for (UInt_t it = 0; it < fModules.size(); it++){
       fModuleIndex[it]->ProcessDigis(event);
+    }*/
+    for (UInt_t it = 0; it < fModules.size(); it++){
+      //fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
+      std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
+      fHitsVector.insert(fHitsVector.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
     }
+    LOG(info) << "Hit vector size is " << fHitsVector.size();
+    //Convert(fHitsVector);
+    fHits->AbsorbObjects(Convert(fHitsVector));
 
     // Get the hits and the clusters from the modules
     // Set the proper index for the clusters in the hit object
@@ -482,70 +490,6 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
       << right << setw(6) << fNofTimeslices << ", real time " << fixed
       << setprecision(6) << realTime << " s, digis used: " << nGood
 			<< ", ignored: " << nIgnored << ", clusters: " << nClusters << ", hits: " << nHits;
-
-
-  //CbmStsFindHits
-  // --- Clear clusters in modules
-
-/*
-  fTimer.Start();
-  Int_t nModules = 0;
-  for (Int_t iModule = 0; iModule < fSetup->GetNofModules(); iModule++) {
-    CbmStsModule* module = fSetup->GetModule(iModule);
-    if ( module->GetNofClusters() == 0 ) continue;
-    module->ClearClusters();
-    nModules++;
-  }
-  fTimer.Stop();
-  Double_t timeClear = fTimer.RealTime();
-  LOG(debug) << GetName() << ": Cleared clusters in " << nModules
-      << " modules. ";
-
-  // --- Sort clusters into modules
-  fTimer.Start();
-  nClusters = 0;
-  nClusters = SortClusters(event);
-  fTimer.Stop();
-  Double_t timeSort = fTimer.RealTime();
-
-  // --- Find hits in modules
-  fTimer.Start();
-  Int_t nHits = 0;
-  for (Int_t iModule = 0; iModule < fSetup->GetNofModules(); iModule++) {
-    CbmStsModule* module = fSetup->GetModule(iModule);
-    if ( module->GetNofClusters() == 0 ) continue;
-    Int_t nHitsModule = module->FindHits(fHits, event,
-																				 fTimeCutClustersInNs, fTimeCutClustersInSigma);
-    LOG(debug1) << GetName() << ": Module " << module->GetName()
-         << ", clusters: " << module->GetNofClusters()
-         << ", hits: " << nHitsModule;
-    nHits += nHitsModule;
-  }
-  fTimer.Stop();
-  Double_t timeFind = fTimer.RealTime();
-
-  // --- Counters
-  realTime = 0.0;
-  realTime = timeClear + timeSort + timeFind;
-  fNofEvents++;
-  fNofClusters += nClusters;
-  fNofHits     += nHits;
-  fTimeTot     += realTime;
-
-  // --- Log
-  if ( event) LOG(info) << setw(20) << left << GetName() << ": " << "Event "
-      << right << setw(6) << event->GetNumber() << ", real time " << fixed
-      << setprecision(6) << realTime << " s, clusters: " << nClusters
-      << ", hits: " << nHits;
-  else LOG(info) << setw(20) << left << GetName() << ": " << "Time-slice "
-      << right << setw(6) << fNofTimeslices << ", real time " << fixed
-      << setprecision(6) << realTime << " s, clusters: " << nClusters
-      << ", hits: " << nHits;
-  LOG(debug) << GetName() << ": clear " << timeClear << ", sort " << timeSort
-      << ", find " << timeFind; 
-*/
-
-  //return nHits;
 }
 // -------------------------------------------------------------------------
 
@@ -558,7 +502,7 @@ Bool_t CbmStsDigisToHits::ProcessDigi(Int_t index) {
   const CbmStsDigi* digi = fDigiManager->Get<CbmStsDigi>(index);
   assert(digi);
   UInt_t moduleAddress = CbmStsAddress::GetMotherAddress(digi->GetAddress(),
-																												 kStsModule);
+											 kStsModule);
 
   // --- Get the cluster finder module
   assert( fModules.count(moduleAddress) );
@@ -619,3 +563,4 @@ Int_t CbmStsDigisToHits::SortClusters(CbmEvent* event) {
 // -------------------------------------------------------------------------
 
 ClassImp(CbmStsDigisToHits)
+

@@ -8,11 +8,11 @@
 #include <mutex>
 #include "TNamed.h"
 #include "CbmStsModule.h"
-#include "TClonesArray.h"
 #include "CbmStsHit.h"
+#include "TClonesArray.h"
 
+class TClonesArray;
 class CbmStsClusterAnalysis;
-class CbmStsHit;
 
 /** @class CbmStsDigisToHitsModule
  ** @brief Class for finding clusters in one STS module
@@ -130,25 +130,18 @@ class CbmStsDigisToHitsModule : public TNamed
     //DigisToHits
     void AddDigiToQueue(const CbmStsDigi* digi, Int_t digiIndex);
 
+    std::vector<CbmStsHit> ProcessDigisAndAbsorbAsVector(CbmEvent* event)
+    {
+      ProcessDigis(event);
+      return Convert(fHitOutput);
+    }
+
     TClonesArray* ProcessDigisAndAbsorb(CbmEvent* event)
     {
       ProcessDigis(event);
       return fHitOutput;
     }
-
-    std::vector<CbmStsHit> ProcessDigisAndAbsorbAsVector(CbmEvent* event)
-    {
-      ProcessDigis(event);
-      //LOG(info)<< "fHitOutput size = " << fHitOutput->GetEntriesFast();
-      //std::vector<CbmStsHit> temp = Convert(fHitOutput);
-      //LOG(info) << " after convert vector size = " << temp.size();
-      //return Convert(fHitOutput);
-      //LOG(info) << "vector in module size " << fHitOutputVector.size();
-      return fHitOutputVector;
-    }
     void ProcessDigis(CbmEvent* event);
-
-    std::vector<CbmStsHit> Convert(TClonesArray* arr);
 
     TClonesArray* GetClusterOutput() { return fClusterOutput;}
     TClonesArray* GetHitOutput() { return fHitOutput;}
@@ -175,9 +168,24 @@ class CbmStsDigisToHitsModule : public TNamed
     CbmStsClusterAnalysis* fAna;
     TClonesArray* fClusterOutput;
     TClonesArray* fHitOutput;
-    std::vector<CbmStsHit> fHitOutputVector;
     std::mutex lock;
     //std::vector<Int_t> fDigiIndex;
+
+
+    std::vector<CbmStsHit> Convert(TClonesArray* arr)
+    {
+      std::vector<CbmStsHit> vec;
+      Int_t entries = arr->GetEntriesFast();
+      if (entries > 0) {
+        CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(0));
+        // LOG(info) << "Entries in TCA for data type " << hit->GetName() << ": " << entries;
+      }
+      for(int i=0; i< entries; ++i) {
+        CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(i));
+        vec.emplace_back(*hit);
+      }
+      return vec;
+    }
 
 
     /** Check for a matching digi in a given channel

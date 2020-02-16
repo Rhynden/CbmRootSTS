@@ -9,7 +9,6 @@
 #include "FairLogger.h"
 #include "CbmStsAddress.h"
 #include "CbmStsCluster.h"
-#include "CbmStsHit.h"
 #include "CbmStsClusterAnalysis.h"
 
 
@@ -72,7 +71,6 @@ CbmStsDigisToHitsModule::CbmStsDigisToHitsModule(UShort_t nChannels,
   , fHitOutput(new TClonesArray("CbmStsHit", 6e3))  
 {
   fDigiQueue.reserve(60000);
-  fHitOutputVector.reserve(60000);
 }
 // -------------------------------------------------------------------------
 
@@ -288,10 +286,9 @@ void CbmStsDigisToHitsModule::ProcessDigis(CbmEvent* event) {
   // Int_t clusters = fModule->GetNofClsters();
   //LOG(INFO) << "Clusters in Module" << moduleNumber << " is " << fModule->GetClusters().size();
   //LOG(INFO) << "CutInNs = " << fTimeCutClustersInNs << " CutInSigma = " << fTimeCutClustersInSigma;
-  //LOG(DEBUG) << "Processing module number " << fModule;
+  LOG(DEBUG) << "Processing module number " << fModule;
   //  Int_t nModuleHits = fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
-  //fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
-  fModule->FindHits(&fHitOutputVector, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+  fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
 
 
   //return fDigiQueue.size(); 
@@ -302,22 +299,6 @@ void CbmStsDigisToHitsModule::ProcessDigis(CbmEvent* event) {
 //  return fHitOutput;
 }
 // -------------------------------------------------------------------------
-
-
-  std::vector<CbmStsHit> CbmStsDigisToHitsModule::Convert(TClonesArray* arr)
-  {
-    std::vector<CbmStsHit> vec;
-    Int_t entries = arr->GetEntriesFast();
-    if (entries > 0) {
-      CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(0));
-      //LOG(info) << "Entries in TCA for data type " << hit->GetName() << ": " << entries;
-    }
-    for(int i=0; i< entries; ++i) {
-      CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(i));
-      vec.emplace_back(*hit);
-    }
-    return vec;
-  } 
 
 
 // ----- Process an input digi   -------------------------------------------

@@ -9,6 +9,7 @@
 #include "FairTask.h"
 #include "CbmStsReco.h"
 #include "CbmStsHit.h"
+#include "TClonesArray.h"
 
 class TClonesArray;
 class CbmDigiManager;
@@ -17,7 +18,6 @@ class CbmStsClusterAnalysis;
 class CbmStsDigisToHitsModule;
 class CbmStsDigitizeParameters;
 class CbmStsSetup;
-class CbmStsHit;
 
 
 /** @class CbmStsDigisToHits
@@ -42,7 +42,7 @@ class CbmStsDigisToHits : public FairTask
   public:
 
     /** @brief Constructor **/
-    CbmStsDigisToHits(ECbmMode mode = kCbmTimeslice, Bool_t clusterOutputMode = kFALSE, Bool_t parallelism_enabled = kFALSE);
+    CbmStsDigisToHits(ECbmMode mode = kCbmTimeslice, Bool_t ClusterOutputMode = kFALSE, Bool_t Parallelism_enabled = kFALSE);
 
 
     /** @brief Destructor  **/
@@ -156,11 +156,27 @@ class CbmStsDigisToHits : public FairTask
 
     //DigisToHits
     std::vector<CbmStsDigisToHitsModule*> fModuleIndex;
-    Bool_t clusterOutputMode;
-    TClonesArray* fHits;
+    Bool_t fClusterOutputMode;
+    TClonesArray* fHits; 
     std::vector<CbmStsHit> fHitsVector;
-    Bool_t parallelism_enabled;
-    //Bool_t parallelism_enabled = kTRUE;
+    Bool_t fParallelism_enabled;
+
+    TClonesArray* Convert(std::vector<CbmStsHit> arr)
+    {
+      TClonesArray* tca;
+      tca = new TClonesArray("CbmStsHit", 6e3);
+      Int_t entries = arr.size();
+      if (entries > 0) {
+        for(int i=0; i< entries; ++i) {
+          CbmStsHit hit = static_cast<CbmStsHit>(arr[i]);
+          //tca->AddAt(&hit, i);
+          CbmStsHit* newHit = new ( (*tca)[i] ) CbmStsHit();
+          *newHit = hit;
+        }
+      }
+      return tca;
+    }
+
 
     /** @brief Sort clusters into modules
      ** @param event  Pointer to event object. If null, use entire
@@ -226,3 +242,4 @@ class CbmStsDigisToHits : public FairTask
 };
 
 #endif
+

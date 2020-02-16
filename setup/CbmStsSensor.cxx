@@ -42,6 +42,7 @@ CbmStsSensor::CbmStsSensor(UInt_t address, TGeoPhysicalNode* node,
     CbmStsElement(address, kStsSensor, node, mother),
     fConditions(nullptr),
     fCurrentLink(nullptr),
+    fHits(nullptr),
     fEvent(nullptr)
 {
 }
@@ -56,7 +57,7 @@ void CbmStsSensor::CreateHit(Double_t xLocal, Double_t yLocal, Double_t varX,
 		                     Double_t du, Double_t dv) {
 
   // ---  Check output array
-  //assert(fHits);
+  assert(fHits);
 
 	// --- If a TGeoNode is attached, transform into global coordinate system
 	Double_t local[3] = { xLocal, yLocal, 0.};
@@ -83,21 +84,10 @@ void CbmStsSensor::CreateHit(Double_t xLocal, Double_t yLocal, Double_t varX,
 	Double_t hitTimeError = 0.5 * TMath::Sqrt( etF*etF + etB*etB );
 
 	// --- Create hit
-	//Int_t index = fHits->GetEntriesFast();
-	Int_t index = fHits->size();
+	Int_t index = fHits->GetEntriesFast();
 	Int_t indexF = ( clusterF ? clusterF->GetIndex() : -1 );
     Int_t indexB = ( clusterB ? clusterB->GetIndex() : -1 );
-	/*fHits->emplace_back(GetAddress(),              // address
-					      global,                // coordinates
-					      error,                 // coordinate error
-					      varXY,                 // covariance xy
-					      indexF,                // front cluster index
-					      indexB,                // back cluster index
-					      hitTime,               // hit time
-					      hitTimeError,          // hit time error
-					      du, dv);*/
-	
-	/*new ( (*fHits)[index] )
+	new ( (*fHits)[index] )
 			CbmStsHit(GetAddress(),              // address
 					      global,                // coordinates
 					      error,                 // coordinate error
@@ -106,12 +96,11 @@ void CbmStsSensor::CreateHit(Double_t xLocal, Double_t yLocal, Double_t varX,
 					      indexB,                // back cluster index
 					      hitTime,               // hit time
 					      hitTimeError,          // hit time error
-					      du, dv);               // errors in u and v*/
+					      du, dv);               // errors in u and v
 	if ( fEvent) fEvent->AddData(kStsHit, index);
 
 	LOG(debug2) << GetName() << ": Creating hit at (" << global[0] << ", "
 			        << global[1] << ", " << global[2] << ")";
-	LOG(info) << "fHits size is now " << fHits->size();
 	return;
 }
 // -------------------------------------------------------------------------
