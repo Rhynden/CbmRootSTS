@@ -80,10 +80,10 @@ class CbmStsSensor : public CbmStsElement
     		       CbmStsCluster* clusterF, CbmStsCluster* clusterB,
     		       Double_t du = 0., Double_t dv = 0.);
 
-    /*void CreateHitInVector(Double_t xLocal, Double_t yLocal,
+    void CreateHitInVector(Double_t xLocal, Double_t yLocal,
     		       Double_t varX, Double_t varY, Double_t varXY,
     		       CbmStsCluster* clusterF, CbmStsCluster* clusterB,
-    		       Double_t du = 0., Double_t dv = 0.);*/
+    		       Double_t du = 0., Double_t dv = 0.);
 
 
     /** Find hits in sensor
@@ -217,7 +217,7 @@ class CbmStsSensor : public CbmStsElement
     CbmStsSensorConditions*  fConditions;  ///< Operating conditions
     CbmLink* fCurrentLink;  ///< Link to currently processed MCPoint
     TClonesArray* fHits;    ///< Output array for hits. Used in hit finding.
-    //std::vector<CbmStsHit> * fHitsVector;
+    std::vector<CbmStsHit> fHitsVector;
     CbmEvent* fEvent;       //! ///< Pointer to current event
 
     std::vector<CbmStsHit> Convert(TClonesArray* arr)

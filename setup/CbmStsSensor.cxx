@@ -106,7 +106,7 @@ void CbmStsSensor::CreateHit(Double_t xLocal, Double_t yLocal, Double_t varX,
 // -------------------------------------------------------------------------
 
 // -----   Create a new hit   ----------------------------------------------
-/*void CbmStsSensor::CreateHitInVector(Double_t xLocal, Double_t yLocal, Double_t varX,
+void CbmStsSensor::CreateHitInVector(Double_t xLocal, Double_t yLocal, Double_t varX,
 		                     Double_t varY, Double_t varXY,
 		                     CbmStsCluster* clusterF, CbmStsCluster* clusterB,
 		                     Double_t du, Double_t dv) {
@@ -157,7 +157,7 @@ void CbmStsSensor::CreateHit(Double_t xLocal, Double_t yLocal, Double_t varX,
 	LOG(debug2) << GetName() << ": Creating hit at (" << global[0] << ", "
 			        << global[1] << ", " << global[2] << ")";
 	return;
-}*/
+}
 // -------------------------------------------------------------------------
 
 
