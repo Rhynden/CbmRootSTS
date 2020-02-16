@@ -168,6 +168,7 @@ class CbmStsDigisToHitsModule : public TNamed
     CbmStsClusterAnalysis* fAna;
     TClonesArray* fClusterOutput;
     TClonesArray* fHitOutput;
+    std::vector<CbmStsHit> fHitOutputVector;
     std::mutex lock;
     //std::vector<Int_t> fDigiIndex;
 
@@ -185,6 +186,22 @@ class CbmStsDigisToHitsModule : public TNamed
         vec.emplace_back(*hit);
       }
       return vec;
+    }
+
+    TClonesArray* Convert2(std::vector<CbmStsHit> arr)
+    {
+      TClonesArray* tca;
+      tca = new TClonesArray("CbmStsHit", 6e3);
+      Int_t entries = arr.size();
+      if (entries > 0) {
+        for(int i=0; i< entries; ++i) {
+          CbmStsHit hit = static_cast<CbmStsHit>(arr[i]);
+          //tca->AddAt(&hit, i);
+          CbmStsHit* newHit = new ( (*tca)[i] ) CbmStsHit();
+          *newHit = hit;
+        }
+      }
+      return tca;
     }
 
 

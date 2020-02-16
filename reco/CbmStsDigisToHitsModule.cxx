@@ -288,8 +288,9 @@ void CbmStsDigisToHitsModule::ProcessDigis(CbmEvent* event) {
   //LOG(INFO) << "CutInNs = " << fTimeCutClustersInNs << " CutInSigma = " << fTimeCutClustersInSigma;
   LOG(DEBUG) << "Processing module number " << fModule;
   //  Int_t nModuleHits = fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
-  fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
-
+  //fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+  fModule->FindHitsVector(&fHitOutputVector, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+  fHitOutput->AbsorbObjects(Convert2(fHitOutputVector));
 
   //return fDigiQueue.size(); 
   //return fClusterOutput->GetEntriesFast();

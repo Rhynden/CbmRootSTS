@@ -14,8 +14,10 @@
 #include <string>
 #include "CbmStsAddress.h"
 #include "CbmStsCluster.h"
+#include "CbmStsHit.h"
 #include "CbmStsElement.h"
 #include "CbmStsSensorConditions.h"
+#include "TClonesArray.h"
 
 class TClonesArray;
 class TGeoPhysicalNode;
@@ -78,6 +80,11 @@ class CbmStsSensor : public CbmStsElement
     		       CbmStsCluster* clusterF, CbmStsCluster* clusterB,
     		       Double_t du = 0., Double_t dv = 0.);
 
+    /*void CreateHitInVector(Double_t xLocal, Double_t yLocal,
+    		       Double_t varX, Double_t varY, Double_t varXY,
+    		       CbmStsCluster* clusterF, CbmStsCluster* clusterB,
+    		       Double_t du = 0., Double_t dv = 0.);*/
+
 
     /** Find hits in sensor
      ** @param clusters  Vector of clusters
@@ -95,6 +102,10 @@ class CbmStsSensor : public CbmStsElement
      **/
     virtual Int_t FindHits(std::vector<CbmStsCluster*>& clusters,
                            TClonesArray* hitArray, CbmEvent* event,
+                           Double_t tCutInNs, Double_t tCutInSigma) = 0;
+
+    virtual Int_t FindHitsVector(std::vector<CbmStsCluster*>& clusters,
+                           std::vector<CbmStsHit>* hitArray, CbmEvent* event,
                            Double_t tCutInNs, Double_t tCutInSigma) = 0;
 
 
@@ -206,8 +217,40 @@ class CbmStsSensor : public CbmStsElement
     CbmStsSensorConditions*  fConditions;  ///< Operating conditions
     CbmLink* fCurrentLink;  ///< Link to currently processed MCPoint
     TClonesArray* fHits;    ///< Output array for hits. Used in hit finding.
+    //std::vector<CbmStsHit> * fHitsVector;
     CbmEvent* fEvent;       //! ///< Pointer to current event
 
+    std::vector<CbmStsHit> Convert(TClonesArray* arr)
+      {
+        std::vector<CbmStsHit> vec;
+        Int_t entries = arr->GetEntriesFast();
+        if (entries > 0) {
+          CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(0));
+          // LOG(info) << "Entries in TCA for data type " << hit->GetName() << ": " << entries;
+        }
+        for(int i=0; i< entries; ++i) {
+          CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(i));
+          vec.emplace_back(*hit);
+        }
+        return vec;
+      }
+
+
+    TClonesArray* Convert2(std::vector<CbmStsHit> arr)
+    {
+      TClonesArray* tca;
+      tca = new TClonesArray("CbmStsHit", 6e3);
+      Int_t entries = arr.size();
+      if (entries > 0) {
+        for(int i=0; i< entries; ++i) {
+          CbmStsHit hit = static_cast<CbmStsHit>(arr[i]);
+          //tca->AddAt(&hit, i);
+          CbmStsHit* newHit = new ( (*tca)[i] ) CbmStsHit();
+          *newHit = hit;
+        }
+      }
+      return tca;
+    }
 
     /** Perform response simulation for one MC Point
      ** @param point   Pointer to CbmStsSensorPoint with relevant parameters

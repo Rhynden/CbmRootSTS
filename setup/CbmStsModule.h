@@ -131,6 +131,9 @@ class CbmStsModule : public CbmStsElement
      ** difference, which is calculated from the cluster time errors.
      ** If both tCutInNs and tCutInSigma are negative, no time cut is applied.
      **/
+    Int_t FindHitsVector(std::vector<CbmStsHit>* hitArray, CbmEvent* event = NULL,
+									 Double_t tCutInNs = -1., Double_t tCutInSigma = 4.);
+
     Int_t FindHits(TClonesArray* hitArray, CbmEvent* event = NULL,
 									 Double_t tCutInNs = -1., Double_t tCutInSigma = 4.);
 
