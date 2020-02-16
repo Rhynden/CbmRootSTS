@@ -9,6 +9,7 @@
 #include "CbmStsDigitize.h"
 #include "CbmStsDigitizeParameters.h"
 #include "CbmStsModule.h"
+#include "CbmStsHit.h"
 #include "TClonesArray.h"
 #include "CbmStsPhysics.h"
 #include "CbmStsSensorPoint.h"
@@ -129,7 +130,7 @@ void CbmStsSensorDssd::CrossTalk(Double_t ctcoeff) {
 
 // -----  Hit finding   ----------------------------------------------------
 Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
-                                 TClonesArray* hitArray, CbmEvent* event,
+                                 std::vector<CbmStsHit>* hitArray, CbmEvent* event,
                                  Double_t tCutInNs,
 																 Double_t tCutInSigma) {
 
@@ -141,7 +142,7 @@ Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
   //LOG(INFO) << "tCutInSigma" << tCutInSigma;
 
 
-  fHits = hitArray;
+  //fHits = hitArray;
   fEvent = event;
   Int_t nHits = 0;
 
@@ -235,7 +236,6 @@ Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
 
   LOG(debug3) << GetName() << ": Clusters " << nClusters << " ( "
       << nClustersF << " / " << nClustersB << " ), hits: " << nHits;
-
 
   return nHits;
 }
@@ -341,8 +341,8 @@ Double_t CbmStsSensorDssd::LorentzShift(Double_t z, Int_t chargeType,
 
 // -----  Hit creation from single clusters   ------------------------------
 Int_t CbmStsSensorDssd::MakeHitsFromClusters(std::vector<CbmStsCluster*>& clusters,
-                                 TClonesArray* hitArray, CbmEvent* event) {
-  fHits = hitArray;
+                                 std::vector<CbmStsHit>* hitArray, CbmEvent* event) {
+  //fHits = hitArray;
   fEvent = event;
   for (auto& cluster : clusters) CreateHitFromCluster(cluster);
   return clusters.size();;

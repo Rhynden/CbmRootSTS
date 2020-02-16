@@ -178,7 +178,7 @@ InitStatus CbmStsReco::Init() {
  
   else // --- Instantiate the cluster finder
     {  
-    LOG(info) << "DigisToHits starting StsFindClusters and StsFindHits";
+    /*LOG(info) << "DigisToHits starting StsFindClusters and StsFindHits";
     CbmStsFindClusters* findClusters = new CbmStsFindClusters(fMode);
     findClusters->SetTimeCutInSigma(fTimeCutDigisInSigma);
     if ( fTimeCutDigisInNs >= 0. ) findClusters->SetTimeCut(fTimeCutDigisInNs);
@@ -195,7 +195,7 @@ InitStatus CbmStsReco::Init() {
       if ( fMode == kCbmTimeslice) Add(new CbmStsFindHitsSingleCluster());
       else LOG(FATAL) << GetName() << ": single-cluster hit finder is not "
           << "available in event-by-event mode";
-    }
+    }*/
     }
 
   return kSUCCESS;

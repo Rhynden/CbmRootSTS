@@ -233,7 +233,7 @@ void CbmStsModule::Digitize(UShort_t channel, CbmStsSignal* signal) {
 
 
 // -----   Find hits   -----------------------------------------------------
-Int_t CbmStsModule::FindHits(TClonesArray* hitArray, CbmEvent* event,
+Int_t CbmStsModule::FindHits(std::vector<CbmStsHit>* hitArray, CbmEvent* event,
                              Double_t tCutInNs, Double_t tCutInSigma) {
 
   // --- Call FindHits method in each daughter sensor
@@ -243,7 +243,6 @@ Int_t CbmStsModule::FindHits(TClonesArray* hitArray, CbmEvent* event,
     nHits += sensor->FindHits(fClusters, hitArray, event,
                               tCutInNs, tCutInSigma);
   }
-
   LOG(debug2) << GetName() << ": Clusters " << fClusters.size()
                   << ", sensors " << GetNofDaughters() << ", hits "
                   << nHits;
@@ -253,7 +252,7 @@ Int_t CbmStsModule::FindHits(TClonesArray* hitArray, CbmEvent* event,
 
 
 // -----   Find hits   -----------------------------------------------------
-Int_t CbmStsModule::MakeHitsFromClusters(TClonesArray* hitArray,
+Int_t CbmStsModule::MakeHitsFromClusters(std::vector<CbmStsHit>* hitArray,
                                          CbmEvent* event) {
 
   // --- Call MakeHits method in each daughter sensor

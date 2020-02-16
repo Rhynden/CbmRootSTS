@@ -15,6 +15,7 @@
 #include "CbmStsDigitizeParameters.h"
 #include "CbmStsPhysics.h"
 #include "CbmStsSetup.h"
+#include "CbmStsHit.h"
 
 
 using namespace std;

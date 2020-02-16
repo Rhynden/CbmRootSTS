@@ -22,14 +22,12 @@
 #include "CbmStsSensor.h"
 #include "CbmStsSensorDssdStereo.h"
 #include "CbmStsSetup.h"
-#include "CbmStsHit.h"
 
 using std::fixed;
 using std::left;
 using std::right;
 using std::setprecision;
 using std::setw;
-
 
 // -----   Constructor   ---------------------------------------------------
 CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode, Bool_t _parallelism_enabled)
@@ -60,6 +58,7 @@ CbmStsDigisToHits::CbmStsDigisToHits(ECbmMode mode, Bool_t _clusterOutputMode, B
     , fTimeTot(0.)
     , fModules()
 {
+  fHitsVector.reserve(20000000);
 }
 // -------------------------------------------------------------------------
 
@@ -373,14 +372,21 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   // from the modules in exactely the same order. Otherwise the reindexing of the cluster ids in the hit
   // objects can't be done
   if (!clusterOutputMode) {
+    LOG(info) << "Processing digis without ClusterOutputMode";
+    #pragma omp declare reduction(combineHitOutputVector: std::vector<CbmStsHit>: omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
     #pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
-    TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
-    #pragma omp parallel for reduction(combineHitOutput:fHitsCopy) if(parallelism_enabled)
+    //TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
+    #pragma omp parallel for reduction(combineHitOutputVector:fHitsVector) if(parallelism_enabled)
     for (UInt_t it = 0; it < fModules.size(); it++){
-      fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
+      //fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
+      std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
+      //LOG(info) << "temp size is = " << temp.size();
+      fHitsVector.insert(fHitsVector.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
     }
 
-    fHits = fHitsCopy;
+    //fHits->AbsorbObjects(fHitsCopy);
+    //LOG(info) << "Hits in fHits " << fHits->GetEntriesFast();
+    LOG(info) << "Vector Hit size = " << fHitsVector.size();
   } else {
 
     // This part can run parallel

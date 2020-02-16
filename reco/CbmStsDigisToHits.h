@@ -8,6 +8,7 @@
 #include "TStopwatch.h"
 #include "FairTask.h"
 #include "CbmStsReco.h"
+#include "CbmStsHit.h"
 
 class TClonesArray;
 class CbmDigiManager;
@@ -16,6 +17,7 @@ class CbmStsClusterAnalysis;
 class CbmStsDigisToHitsModule;
 class CbmStsDigitizeParameters;
 class CbmStsSetup;
+class CbmStsHit;
 
 
 /** @class CbmStsDigisToHits
@@ -156,6 +158,7 @@ class CbmStsDigisToHits : public FairTask
     std::vector<CbmStsDigisToHitsModule*> fModuleIndex;
     Bool_t clusterOutputMode;
     TClonesArray* fHits;
+    std::vector<CbmStsHit> fHitsVector;
     Bool_t parallelism_enabled;
     //Bool_t parallelism_enabled = kTRUE;
 

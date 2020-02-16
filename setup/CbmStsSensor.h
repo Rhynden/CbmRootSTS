@@ -14,6 +14,7 @@
 #include <string>
 #include "CbmStsAddress.h"
 #include "CbmStsCluster.h"
+#include "CbmStsHit.h"
 #include "CbmStsElement.h"
 #include "CbmStsSensorConditions.h"
 
@@ -94,7 +95,7 @@ class CbmStsSensor : public CbmStsElement
      ** If both tCutInNs and tCutInSigma are negative, no time cut is applied.
      **/
     virtual Int_t FindHits(std::vector<CbmStsCluster*>& clusters,
-                           TClonesArray* hitArray, CbmEvent* event,
+                           std::vector<CbmStsHit>* hitArray, CbmEvent* event,
                            Double_t tCutInNs, Double_t tCutInSigma) = 0;
 
 
@@ -147,7 +148,7 @@ class CbmStsSensor : public CbmStsElement
      ** @return Number of created hits
      **/
     virtual Int_t MakeHitsFromClusters(std::vector<CbmStsCluster*>& clusters,
-                                       TClonesArray* hitArray,
+                                       std::vector<CbmStsHit>* hitArray,
                                        CbmEvent* event) = 0;
 
 
@@ -205,7 +206,7 @@ class CbmStsSensor : public CbmStsElement
 
     CbmStsSensorConditions*  fConditions;  ///< Operating conditions
     CbmLink* fCurrentLink;  ///< Link to currently processed MCPoint
-    TClonesArray* fHits;    ///< Output array for hits. Used in hit finding.
+    std::vector<CbmStsHit>* fHits;    ///< Output array for hits. Used in hit finding.
     CbmEvent* fEvent;       //! ///< Pointer to current event
 
 

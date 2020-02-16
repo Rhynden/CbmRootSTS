@@ -129,7 +129,7 @@ class CbmStsModule : public CbmStsElement
      ** difference, which is calculated from the cluster time errors.
      ** If both tCutInNs and tCutInSigma are negative, no time cut is applied.
      **/
-    Int_t FindHits(TClonesArray* hitArray, CbmEvent* event = NULL,
+    Int_t FindHits(std::vector<CbmStsHit>* hitArray, CbmEvent* event = NULL,
 									 Double_t tCutInNs = -1., Double_t tCutInSigma = 4.);
 
 
@@ -199,7 +199,7 @@ class CbmStsModule : public CbmStsElement
      **
      ** This method will create one hit per cluster.
      **/
-    Int_t MakeHitsFromClusters(TClonesArray* hitArray, CbmEvent* event = NULL);
+    Int_t MakeHitsFromClusters(std::vector<CbmStsHit>* hitArray, CbmEvent* event = NULL);
 
 
     /** Digitise signals in the analogue buffer

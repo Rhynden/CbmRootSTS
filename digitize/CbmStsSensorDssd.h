@@ -81,7 +81,7 @@ class CbmStsSensorDssd : public CbmStsSensor
      ** If both tCutInNs and tCutInSigma are negative, no time cut is applied.
      **/
     virtual Int_t FindHits(std::vector<CbmStsCluster*>& clusters,
-                           TClonesArray* hitArray, CbmEvent* event,
+                           std::vector<CbmStsHit>* hitArray, CbmEvent* event,
 													 Double_t tCutInNs, Double_t tCutInSigma);
 
 
@@ -106,7 +106,7 @@ class CbmStsSensorDssd : public CbmStsSensor
      ** @return Number of created hits
      **/
     virtual Int_t MakeHitsFromClusters(std::vector<CbmStsCluster*>& clusters,
-                                       TClonesArray* hitArray,
+                                       std::vector<CbmStsHit>* hitArray,
                                        CbmEvent* event);
 
 

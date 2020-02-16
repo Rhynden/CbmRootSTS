@@ -8,9 +8,11 @@
 #include <mutex>
 #include "TNamed.h"
 #include "CbmStsModule.h"
+#include "TClonesArray.h"
+#include "CbmStsHit.h"
 
-class TClonesArray;
 class CbmStsClusterAnalysis;
+class CbmStsHit;
 
 /** @class CbmStsDigisToHitsModule
  ** @brief Class for finding clusters in one STS module
@@ -133,7 +135,20 @@ class CbmStsDigisToHitsModule : public TNamed
       ProcessDigis(event);
       return fHitOutput;
     }
+
+    std::vector<CbmStsHit> ProcessDigisAndAbsorbAsVector(CbmEvent* event)
+    {
+      ProcessDigis(event);
+      //LOG(info)<< "fHitOutput size = " << fHitOutput->GetEntriesFast();
+      //std::vector<CbmStsHit> temp = Convert(fHitOutput);
+      //LOG(info) << " after convert vector size = " << temp.size();
+      //return Convert(fHitOutput);
+      //LOG(info) << "vector in module size " << fHitOutputVector.size();
+      return fHitOutputVector;
+    }
     void ProcessDigis(CbmEvent* event);
+
+    std::vector<CbmStsHit> Convert(TClonesArray* arr);
 
     TClonesArray* GetClusterOutput() { return fClusterOutput;}
     TClonesArray* GetHitOutput() { return fHitOutput;}
@@ -160,6 +175,7 @@ class CbmStsDigisToHitsModule : public TNamed
     CbmStsClusterAnalysis* fAna;
     TClonesArray* fClusterOutput;
     TClonesArray* fHitOutput;
+    std::vector<CbmStsHit> fHitOutputVector;
     std::mutex lock;
     //std::vector<Int_t> fDigiIndex;
 
