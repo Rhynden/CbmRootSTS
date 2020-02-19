@@ -141,8 +141,11 @@ Int_t CbmStsSensorDssd::FindHitsVector(std::vector<CbmStsCluster*>& clusters,
   //LOG(INFO) << "tCutInSigma" << tCutInSigma;
 
 
-  //fHits = hitArray;
-  fHits = Convert2(*hitArray);
+  fHitsVector = hitArray;
+  fHitsVector->reserve(5000);
+  //&fHitsVector = hitArray;
+  //fHitsVector
+  //fHits = Convert2(*hitArray);
   fEvent = event;
   Int_t nHits = 0;
 
@@ -237,7 +240,8 @@ Int_t CbmStsSensorDssd::FindHitsVector(std::vector<CbmStsCluster*>& clusters,
   LOG(debug3) << GetName() << ": Clusters " << nClusters << " ( "
       << nClustersF << " / " << nClustersB << " ), hits: " << nHits;
 
-  *hitArray = Convert(fHits);
+  //*hitArray = Convert(fHits);
+  //hitArray = fHitsVector;
   return nHits;
 }
 // -------------------------------------------------------------------------
@@ -351,6 +355,7 @@ Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
 
   LOG(debug3) << GetName() << ": Clusters " << nClusters << " ( "
       << nClustersF << " / " << nClustersB << " ), hits: " << nHits;
+
 
 
   return nHits;

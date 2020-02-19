@@ -480,7 +480,7 @@ Int_t CbmStsSensorDssdStereo::IntersectClusters(CbmStsCluster* clusterF,
         xC -= 0.5 * fDx;
         yC -= 0.5 * fDy;
         // --- Create the hit
-        CreateHit(xC, yC, varX, varY, varXY, clusterF, clusterB, du, dv);
+        CreateHitInVector(xC, yC, varX, varY, varXY, clusterF, clusterB, du, dv);
         nHits++;
 
       }  //? Intersection of lines

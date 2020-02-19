@@ -133,7 +133,7 @@ class CbmStsDigisToHitsModule : public TNamed
     std::vector<CbmStsHit> ProcessDigisAndAbsorbAsVector(CbmEvent* event)
     {
       ProcessDigis(event);
-      return Convert(fHitOutput);
+      return fHitOutputVector;
     }
 
     TClonesArray* ProcessDigisAndAbsorb(CbmEvent* event)

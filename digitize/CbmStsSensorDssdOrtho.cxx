@@ -306,7 +306,7 @@ Int_t CbmStsSensorDssdOrtho::IntersectClusters(CbmStsCluster* clusterF,
   yC -= 0.5 * fDy;
 
   // --- Create the hit
-  CreateHit( xC, yC, varX, varY, varXY, clusterF, clusterB, du, dv);
+  CreateHitInVector( xC, yC, varX, varY, varXY, clusterF, clusterB, du, dv);
   nHits++;
 
   return nHits;

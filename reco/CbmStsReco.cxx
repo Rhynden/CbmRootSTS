@@ -21,7 +21,7 @@
 // -----   Constructor   ---------------------------------------------------
 CbmStsReco::CbmStsReco() :
   FairTask("StsReco", 1),
-  fStsRecoMode(2),
+  fStsRecoMode(1),
   fMode(kCbmTimeslice),
   fUseSingleClusters(kFALSE),
   fSetup(nullptr),

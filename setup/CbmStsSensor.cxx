@@ -112,7 +112,7 @@ void CbmStsSensor::CreateHitInVector(Double_t xLocal, Double_t yLocal, Double_t 
 		                     Double_t du, Double_t dv) {
 
   // ---  Check output array
-  assert(fHits);
+  assert(fHitsVector);
 
 	// --- If a TGeoNode is attached, transform into global coordinate system
 	Double_t local[3] = { xLocal, yLocal, 0.};
@@ -139,10 +139,20 @@ void CbmStsSensor::CreateHitInVector(Double_t xLocal, Double_t yLocal, Double_t 
 	Double_t hitTimeError = 0.5 * TMath::Sqrt( etF*etF + etB*etB );
 
 	// --- Create hit
-	Int_t index = fHits->GetEntriesFast();
+	Int_t index = fHitsVector->size();
 	Int_t indexF = ( clusterF ? clusterF->GetIndex() : -1 );
     Int_t indexB = ( clusterB ? clusterB->GetIndex() : -1 );
-	new ( (*fHits)[index] )
+	fHitsVector->emplace_back(
+						  GetAddress(),              // address
+					      global,                // coordinates
+					      error,                 // coordinate error
+					      varXY,                 // covariance xy
+					      indexF,                // front cluster index
+					      indexB,                // back cluster index
+					      hitTime,               // hit time
+					      hitTimeError,          // hit time error
+					      du, dv);
+	/*new ( (*fHits)[index] )
 			CbmStsHit(GetAddress(),              // address
 					      global,                // coordinates
 					      error,                 // coordinate error
@@ -151,7 +161,10 @@ void CbmStsSensor::CreateHitInVector(Double_t xLocal, Double_t yLocal, Double_t 
 					      indexB,                // back cluster index
 					      hitTime,               // hit time
 					      hitTimeError,          // hit time error
-					      du, dv);               // errors in u and v
+					      du, dv);*/               // errors in u and v
+
+	//LOG(info) << "fHitsVector size after create hit " << fHitsVector.size();
+
 	if ( fEvent) fEvent->AddData(kStsHit, index);
 
 	LOG(debug2) << GetName() << ": Creating hit at (" << global[0] << ", "

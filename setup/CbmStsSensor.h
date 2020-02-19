@@ -217,7 +217,7 @@ class CbmStsSensor : public CbmStsElement
     CbmStsSensorConditions*  fConditions;  ///< Operating conditions
     CbmLink* fCurrentLink;  ///< Link to currently processed MCPoint
     TClonesArray* fHits;    ///< Output array for hits. Used in hit finding.
-    std::vector<CbmStsHit> fHitsVector;
+    std::vector<CbmStsHit>* fHitsVector; //!
     CbmEvent* fEvent;       //! ///< Pointer to current event
 
     std::vector<CbmStsHit> Convert(TClonesArray* arr)
@@ -266,6 +266,11 @@ class CbmStsSensor : public CbmStsElement
     /** Prevent usage of copy constructor and assignment operator **/
     CbmStsSensor(const CbmStsSensor&) = delete;
     CbmStsSensor& operator=(const CbmStsSensor&) = delete;
+
+  
+
+
+
 
 
     ClassDef(CbmStsSensor,2);
