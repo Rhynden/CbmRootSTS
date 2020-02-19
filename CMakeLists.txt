@@ -96,29 +96,29 @@ ${CBMROOT_SOURCE_DIR}/sts/reco
 # needed by MatchHits???
 ${CBMROOT_SOURCE_DIR}/passive
 
-${CBMROOT_SOURCE_DIR}/base
+${CBMBASE_DIR}
 ${CBMROOT_SOURCE_DIR}/sim/transport/base
 
 ${CBMROOT_SOURCE_DIR}/run
 
-${CBMROOT_SOURCE_DIR}/data
-${CBMROOT_SOURCE_DIR}/data/sts
+${CBMDATA_DIR}
+${CBMDATA_DIR}/sts
 
 # needed by run/CbmMCBuffer.h
-${CBMROOT_SOURCE_DIR}/data/mvd
-${CBMROOT_SOURCE_DIR}/data/rich
-${CBMROOT_SOURCE_DIR}/data/much
-${CBMROOT_SOURCE_DIR}/data/trd
-${CBMROOT_SOURCE_DIR}/data/tof
-${CBMROOT_SOURCE_DIR}/data/ecal
-${CBMROOT_SOURCE_DIR}/data/psd
-${CBMROOT_SOURCE_DIR}/data/global
+${CBMDATA_DIR}/mvd
+${CBMDATA_DIR}/rich
+${CBMDATA_DIR}/much
+${CBMDATA_DIR}/trd
+${CBMDATA_DIR}/tof
+${CBMDATA_DIR}/ecal
+${CBMDATA_DIR}/psd
+${CBMDATA_DIR}/global
 
 
 # for CbmStsTimeBasedQaReport
-${CBMROOT_SOURCE_DIR}/base/report
-${CBMROOT_SOURCE_DIR}/base/draw
-${CBMROOT_SOURCE_DIR}/base/utils
+${CBMBASE_DIR}/report
+${CBMBASE_DIR}/draw
+${CBMBASE_DIR}/utils
 )
 
 set(SYSTEM_INCLUDE_DIRECTORIES

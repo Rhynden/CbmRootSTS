@@ -8,6 +8,7 @@
 
 #include <map>
 #include "TStopwatch.h"
+
 #include "CbmDigitize.h"
 #include "CbmMatch.h"
 #include "CbmStsDigi.h"
@@ -26,14 +27,14 @@ class CbmStsSetup;
  **
  ** The STS digitiser task reads CbmStsPoint from the input and produces
  ** objects of type CbmStsDigi. The StsPoints are distributed to the
- ** respective sensors, where the analog response is calculated. This
+ ** respective sensors, where the analogue response is calculated. This
  ** is buffered and digitised by the connected module.
  ** The digitiser task triggers the readout of each module after the end
  ** of each call to Exec(), i.e. after processing one input MC event. All
  ** buffered data prior to the MC time of the current event are read out
  ** and stored in the output.
  **/
-class CbmStsDigitize : public CbmDigitize
+class CbmStsDigitize : public CbmDigitize<CbmStsDigi>
 {
 
  public:
@@ -67,6 +68,12 @@ class CbmStsDigitize : public CbmDigitize
     fDigiPar->SetDiscardSecondaries(flag);
   }
 
+
+  /** @brief Detector system ID
+   ** @return kSts
+   **/
+  Int_t GetSystemId() const { return kSts; }
+
    /**
     * \brief Inherited from FairTask.
     */
@@ -98,9 +105,6 @@ class CbmStsDigitize : public CbmDigitize
   /** Re-initialisation **/
   virtual InitStatus ReInit();
 
-
-  /** @brief Clear data arrays **/
-  virtual void ResetArrays();
 
   /** @brief Set individual module parameters
    ** @param parMap Map of module addresses and corresponding module parameters
@@ -213,13 +217,6 @@ class CbmStsDigitize : public CbmDigitize
   }
 
 
-  /** @brief Write a digi to the output tree
-   ** @param digi  Pointer to digi object
-   **/
-  virtual void WriteDigi(CbmDigi* digi, CbmMatch* match = nullptr);
-
-
-
  private:
 
   Bool_t fIsInitialised;   ///< kTRUE if Init() was called
@@ -230,8 +227,6 @@ class CbmStsDigitize : public CbmDigitize
   CbmStsSetup*   fSetup;          ///< STS setup interface
   TClonesArray*  fPoints;         ///< Input array of CbmStsPoint
   TClonesArray*  fTracks;         ///< Input array of CbmMCTrack
-  std::vector<CbmStsDigi>* fDigis; ///< Output array of CbmStsDigi
-  std::vector<CbmMatch>* fMatches; ///< Output array of CbmMatch
   //TClonesArray*  fDigis;          ///< Output array of CbmStsDigi
   //TClonesArray*  fMatches;        ///< Output array of CbmMatch
   TStopwatch     fTimer;          ///< ROOT timer
@@ -336,7 +331,7 @@ class CbmStsDigitize : public CbmDigitize
 
 
 
-  ClassDef(CbmStsDigitize, 4);
+  ClassDef(CbmStsDigitize, 5);
 
 };
 

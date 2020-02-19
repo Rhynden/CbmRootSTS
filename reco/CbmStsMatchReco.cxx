@@ -133,7 +133,7 @@ void CbmStsMatchReco::MatchClusters(const TClonesArray* clusters) {
       CbmMatch* clusterMatch = new CbmMatch();
       Int_t nDigis = cluster->GetNofDigis();
       for (Int_t iDigi = 0; iDigi < nDigis; iDigi++) {
-      	const CbmDigi* digi = fDigiManager->Get<CbmStsDigi>(iDigi);
+      	const CbmStsDigi* digi = fDigiManager->Get<CbmStsDigi>(iDigi);
       	assert(digi);
       	const CbmMatch* digiMatch = fDigiManager->GetMatch(kSts, iDigi);
       	assert(digiMatch);

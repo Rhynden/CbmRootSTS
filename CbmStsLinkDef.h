@@ -24,7 +24,8 @@
 #pragma link C++ class CbmStsMCQa;
 
 // Digitisation
-#pragma link C++ class CbmStsDigitize;
+#pragma link C++ class CbmDigitize<CbmStsDigi>+;
+#pragma link C++ class CbmStsDigitize+;
 #pragma link C++ class CbmStsDigitizeParameters+;
 #pragma link C++ class CbmStsPhysics;
 #pragma link C++ class CbmStsSensorDssd;

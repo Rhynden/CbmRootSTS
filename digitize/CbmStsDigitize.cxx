@@ -58,8 +58,8 @@ using std::stringstream;
 
 
 // -----   Standard constructor   ------------------------------------------
-CbmStsDigitize::CbmStsDigitize()
-: CbmDigitize("StsDigitize"),
+CbmStsDigitize::CbmStsDigitize() :
+  CbmDigitize<CbmStsDigi>("StsDigitize"),
   fIsInitialised(kFALSE),
   fDigiPar(nullptr),
   fUserPar(),
@@ -67,8 +67,6 @@ CbmStsDigitize::CbmStsDigitize()
   fSetup(nullptr),
   fPoints(nullptr),
   fTracks(nullptr),
-  fDigis(nullptr),
-  fMatches(nullptr),
   fTimer(),
   fSensorDinact(0.12),
   fSensorPitch(0.0058),
@@ -93,6 +91,7 @@ CbmStsDigitize::CbmStsDigitize()
   fTimeTot()
 { 
   ResetCounters();
+  fBranchName = "StsDigi";
 }
 // -------------------------------------------------------------------------
 
@@ -100,10 +99,6 @@ CbmStsDigitize::CbmStsDigitize()
 
 // -----   Destructor   ----------------------------------------------------
 CbmStsDigitize::~CbmStsDigitize() {
-  LOG(debug) << "Destructing ";
-  ResetArrays();
-  delete fDigis;
-  delete fMatches;
 }
 // -------------------------------------------------------------------------
 
@@ -173,12 +168,11 @@ void CbmStsDigitize::CreateDigi(Int_t address, UShort_t channel,
   CbmStsDigi* digi = new CbmStsDigi(address, channel, time, adc);
   if ( fCreateMatches ) {
     CbmMatch* digiMatch = new CbmMatch(match);
-    SendDigi(digi, digiMatch);
+    SendData(digi, digiMatch);
   }
-  else SendDigi(digi);
+  else SendData(digi);
 
   fNofDigis++;
-
 }
 // -------------------------------------------------------------------------
 
@@ -241,12 +235,10 @@ void CbmStsDigitize::Exec(Option_t* /*opt*/) {
   }
 
   // --- Event log
-  LOG(info) << left << "+ " << setw(15) << GetName() << ": Event " << setw(6)
-         << right << fCurrentEvent << " at " << fixed << setprecision(3)
-         << fCurrentEventTime << " ns, points: " << fNofPoints
-         << ", signals: " << fNofSignalsF << " / " << fNofSignalsB
-         << ", digis: " << fNofDigis << ". Exec time " << setprecision(6)
-         << fTimer.RealTime() << " s.";
+  LOG(info) << left << setw(15) << GetName() << "["
+            << fixed << setprecision(3) << fTimer.RealTime() << " s]"
+            << " Points: " << fNofPoints << ", signals: " << fNofSignalsF
+            << " / " << fNofSignalsB << ", digis: " << fNofDigis;
 
   // --- Counters
   fTimer.Stop();
@@ -395,16 +387,7 @@ InitStatus CbmStsDigitize::Init() {
   fTracks = (TClonesArray*) ioman->GetObject("MCTrack");
   assert ( fTracks );
 
-  // Register output array (StsDigi)
-  fDigis = new std::vector<CbmStsDigi>();
-  ioman->RegisterAny("StsDigi", fDigis, IsOutputBranchPersistent("StsDigi"));
-
-  // Register output array (StsDigiMatch)
-  if ( fCreateMatches ) {
-  	fMatches = new std::vector<CbmMatch>();
-  	ioman->RegisterAny("StsDigiMatch", fMatches,
-											 IsOutputBranchPersistent("StsDigiMatch"));
-  } //? Create matches
+  RegisterOutput();
 
   // --- Screen output
   LOG(info) << GetName() << ": Initialisation successful";
@@ -575,15 +558,6 @@ InitStatus CbmStsDigitize::ReInit() {
 
 
 
-// -----   Clear the output data arrays   ----------------------------------
-void CbmStsDigitize::ResetArrays() {
-  if ( fDigis ) fDigis->clear();
-  if ( fMatches ) fMatches->clear();
-}
-// -------------------------------------------------------------------------
-
-
-
 // -----   Reset event counters   ------------------------------------------
 void CbmStsDigitize::ResetCounters() {
   fTimeDigiFirst = fTimeDigiLast = -1.;
@@ -705,29 +679,6 @@ void CbmStsDigitize::SetSensorParameterFile(const char* fileName) {
     return;
   }
   fSensorParameterFile = fileName;
-
-}
-// -------------------------------------------------------------------------
-
-
-
-// -----   Write a digi to the output array   ------------------------------
-void CbmStsDigitize::WriteDigi(CbmDigi* digi, CbmMatch* match) {
-
-  // --- Assert that it is a StsDigi
-  CbmStsDigi* stsDigi = dynamic_cast<CbmStsDigi*>(digi);
-  if ( ! stsDigi ) LOG(fatal) << fName
-      << ": not a valid StsDigi pointer!";
-
-  // --- Write digi
-  assert(fDigis);
-  fDigis->push_back(*stsDigi);
-
-  // --- Write match
-  if ( fCreateMatches ) {
-    assert(fMatches);
-    fMatches->push_back(*match);
-  } //? Create matches
 
 }
 // -------------------------------------------------------------------------
