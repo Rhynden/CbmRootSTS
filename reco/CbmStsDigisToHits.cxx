@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <iomanip>
+#include <omp.h>
 #include "TClonesArray.h"
 #include "FairEventHeader.h"
 #include "FairRun.h"
@@ -321,7 +322,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 	Int_t nIgnored = 0;
 
   //Reset even Needed?
-//  #pragma omp parallel for schedule(static) if(fParallelism_enabled)
+  #pragma omp parallel for schedule(static) if(fParallelism_enabled)
   for (UInt_t it = 0; it < fModules.size(); it++){
     fModuleIndex[it]->Reset();
   }
@@ -338,7 +339,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 
   // --- Loop over input digis and distribute them to the different modules/sensors
   Int_t digiIndex = -1;
-  //#pragma omp parallel for schedule(static) if(fParallelism_enabled)
+  #pragma omp parallel for schedule(static) if(fParallelism_enabled)
   for (Int_t iDigi = 0; iDigi < nDigis; iDigi++){
 
     digiIndex = (event ? event->GetIndex(kStsDigi, iDigi) : iDigi);
@@ -373,14 +374,25 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   // from the modules in exactely the same order. Otherwise the reindexing of the cluster ids in the hit
   // objects can't be done
   if (!fClusterOutputMode) {
+    LOG(info) << "Availabe Threads: " << omp_get_max_threads();
     //#pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
-    TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
+    #pragma omp declare reduction(combineHitOutputVector: std::vector<CbmStsHit>: omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
+    //TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
     //#pragma omp parallel for reduction(combineHitOutput:fHitsCopy) if(fParallelism_enabled)
+    #pragma omp parallel for reduction(combineHitOutputVector:fHitsVector) if(fParallelism_enabled)
     for (UInt_t it = 0; it < fModules.size(); it++){
-      fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
+      if (it == 0) LOG(info) << "Processing with " << omp_get_max_threads() << " threads";
+      // Proces Digis in current modul
+      std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
+
+      // Insert new hits from current modul to all hits
+      fHitsVector.insert(fHitsVector.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
     }
 
-    fHits->AbsorbObjects(fHitsCopy);  //fHits = fHitsCopy;
+    LOG(info) << "fHitsVector size is " << fHitsVector.size();
+    // Convert Vector to TClonesArray for comparison reasons only
+    //fHits->AbsorbObjects(Convert(fHitsVector));
+    //fHits->AbsorbObjects(fHitsCopy);  //fHits = fHitsCopy;
   } else {
 
     // This part can run parallel
@@ -464,8 +476,8 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   // --- Screen output
   LOG(debug) << GetName() << ": created " << nClusters << " from index "
       << indexFirst << " to " << indexLast;
-  LOG(debug) << GetName() << ": reset " << time1 << ", process digis " << time2
-      << ", process buffers " << time3 << ", analyse " << time4 << ", register "
+  LOG(info) << GetName() << ": reset " << time1 << ", distribute digis " << time2
+      << ", process digis " << time3 << ", unused timer " << time4 << ", unused timer "
       << time5;
 
   if ( event) LOG(info) << setw(20) << left << GetName() << ": " << "Event "

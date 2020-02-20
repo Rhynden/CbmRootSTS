@@ -84,6 +84,11 @@ class CbmStsSensorDssd : public CbmStsSensor
                            TClonesArray* hitArray, CbmEvent* event,
 													 Double_t tCutInNs, Double_t tCutInSigma);
 
+        virtual Int_t FindHitsVector(std::vector<CbmStsCluster*>& clusters,
+                                 std::vector<CbmStsHit>* hitArray, CbmEvent* event,
+                                 Double_t tCutInNs,
+																 Double_t tCutInSigma);
+
 
     /** @brief Number of strips on front and back side
      ** @param side  0 = front side, 1 = back side
@@ -224,6 +229,9 @@ class CbmStsSensorDssd : public CbmStsSensor
      ** @return Number of intersection points inside active area
      **/
     virtual Int_t IntersectClusters(CbmStsCluster* clusterF,
+                                    CbmStsCluster* clusterB) = 0;
+
+    virtual Int_t IntersectClustersVector(CbmStsCluster* clusterF,
                                     CbmStsCluster* clusterB) = 0;
 
 

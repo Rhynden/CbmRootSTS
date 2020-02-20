@@ -236,6 +236,9 @@ class CbmStsSensorDssdStereo : public CbmStsSensorDssd
      **/
     virtual Int_t IntersectClusters(CbmStsCluster* clusterF,
                                     CbmStsCluster* clusterB);
+                                  
+    virtual Int_t IntersectClustersVector(CbmStsCluster* clusterF,
+                                    CbmStsCluster* clusterB);
 
 
     /** Propagate a charge created in the sensor to the readout strips

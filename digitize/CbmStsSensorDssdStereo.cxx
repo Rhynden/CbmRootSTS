@@ -492,6 +492,119 @@ Int_t CbmStsSensorDssdStereo::IntersectClusters(CbmStsCluster* clusterF,
 // -------------------------------------------------------------------------
 
 
+// -----   Create hits from two clusters   ---------------------------------
+Int_t CbmStsSensorDssdStereo::IntersectClustersVector(CbmStsCluster* clusterF,
+                                                CbmStsCluster* clusterB) {
+  // --- Check pointer validity
+  assert(clusterF);
+  assert(clusterB);
+
+  // --- Ideal hit finder
+  if ( kFALSE ){  //TODO Proper implementation
+    LOG(debug3) << GetName() << ": ideal model of Hit Finder";
+
+    const CbmMatch *clusterFMatch, *clusterBMatch;
+
+    clusterFMatch = static_cast<const CbmMatch*>(clusterF -> GetMatch());
+    if (clusterFMatch){
+      LOG(debug4) << GetName() << ": front cluster exists";
+      if ((clusterFMatch -> GetNofLinks()) != 1) {
+        LOG(debug4) << GetName() << ": front cluster has more or less than 1 CbmLink";
+        return 0;
+      } else LOG(debug4) << GetName() << ": front cluster has " <<  clusterFMatch -> GetNofLinks() << " CbmLink";
+    } else return 0;
+
+    clusterBMatch = static_cast<const CbmMatch*> (clusterB -> GetMatch());
+    if (clusterBMatch){
+      LOG(debug4) << GetName() << ": back cluster exists";
+      if ((clusterBMatch -> GetNofLinks()) != 1){
+        LOG(debug4) << GetName() << ": back cluster has more or less than 1 CbmLink";
+        return 0;
+      } else LOG(debug4) << GetName() << ": back cluster has " <<  clusterBMatch -> GetNofLinks() << " CbmLink";
+    } else return 0;
+
+    if (clusterBMatch -> GetLink(0).GetIndex() != clusterFMatch -> GetLink(0).GetIndex()){
+      LOG(debug4) << GetName() << ": back and front clusters have different index of CbmLink";
+      return 0;
+    } else LOG(debug4) << GetName() << ": back and front clusters have the same index of CbmLink";
+  }
+
+  // --- Calculate cluster centre position on readout edge
+  Int_t side  = -1;
+  Double_t xF = -1.;
+  Double_t xB = -1.;
+  GetClusterPosition(clusterF->GetPosition(), xF, side);
+  if ( side != 0 )
+    LOG(fatal) << GetName() << ": Inconsistent side qualifier " << side
+    << " for front side cluster! ";
+  Double_t exF = clusterF->GetPositionError() * fPitch;
+  Double_t du = exF * TMath::Cos(TMath::DegToRad() * fStereoF);
+  GetClusterPosition(clusterB->GetPosition(), xB, side);
+  if ( side != 1 )
+    LOG(fatal) << GetName() << ": Inconsistent side qualifier " << side
+    << " for back side cluster! ";
+  Double_t exB = clusterB->GetPositionError() * fPitch;
+  Double_t dv = exB * TMath::Cos(TMath::DegToRad() * fStereoB);
+
+  // --- Should be inside active area
+  if ( ! ( xF >= 0. || xF <= fDx) ) return 0;
+  if ( ! ( xB >= 0. || xB <= fDx) ) return 0;
+
+  // --- Hit counter
+  Int_t nHits = 0;
+
+  // --- Calculate number of line segments due to horizontal
+  // --- cross-connection. If x(y=0) does not fall on the bottom edge,
+  // --- the strip is connected to the one corresponding to the line
+  // --- with top edge coordinate xF' = xF +/- Dx. For odd combinations
+  // --- of stereo angle and sensor dimensions, this could even happen
+  // --- multiple times. For each of these lines, the intersection with
+  // --- the line on the other side is calculated. If inside the active area,
+  // --- a hit is created.
+  Int_t nF = Int_t( (xF + fDy * fTanStereo[0]) / fDx );
+  Int_t nB = Int_t( (xB + fDy * fTanStereo[1]) / fDx );
+
+  // --- If n is positive, all lines from 0 to n must be considered,
+  // --- if it is negative (phi negative), all lines from n to 0.
+  Int_t nF1 = TMath::Min(0, nF);
+  Int_t nF2 = TMath::Max(0, nF);
+  Int_t nB1 = TMath::Min(0, nB);
+  Int_t nB2 = TMath::Max(0, nB);
+
+  // --- Double loop over possible lines
+  Double_t xC = -1.;   // x coordinate of intersection point
+  Double_t yC = -1.;   // y coordinate of intersection point
+  Double_t varX = 0.;  // variance of xC
+  Double_t varY = 0.;  // variance of yC
+  Double_t varXY = 0.; // covariance xC-yC
+  for (Int_t iF = nF1; iF <= nF2; iF++) {
+    Double_t xFi = xF - Double_t(iF) * fDx;
+    for (Int_t iB = nB1; iB <= nB2; iB++) {
+      Double_t xBi = xB - Double_t(iB) * fDx;
+
+      // --- Intersect the two lines
+      Bool_t found = Intersect(xFi, exF, xBi, exB, xC, yC, varX, varY, varXY);
+      LOG(debug4) << GetName() << ": Trying " << xFi << ", " << xBi
+          << ", intersection ( " << xC << ", " << yC
+          << " ) " << ( found ? "TRUE" : "FALSE" );
+      if ( found ) {
+
+        // --- Transform into sensor system with origin at sensor centre
+        xC -= 0.5 * fDx;
+        yC -= 0.5 * fDy;
+        // --- Create the hit
+        CreateHitVector(xC, yC, varX, varY, varXY, clusterF, clusterB, du, dv);
+        nHits++;
+
+      }  //? Intersection of lines
+    }  // lines on back side
+  }  // lines on front side
+
+  return nHits;
+}
+// -------------------------------------------------------------------------
+
+
 
 // -----   Modify the strip pitch   ----------------------------------------
 void CbmStsSensorDssdStereo::ModifyStripPitch(Double_t pitch) {

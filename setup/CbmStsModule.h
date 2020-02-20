@@ -14,6 +14,7 @@
 #include "TRandom.h"
 #include "CbmStsCluster.h"
 #include "CbmStsDigi.h"
+#include "CbmStsHit.h"
 #include "digitize/CbmStsSignal.h"
 #include "digitize/CbmStsDigitizeParameters.h"
 #include "setup/CbmStsElement.h"
@@ -130,6 +131,9 @@ class CbmStsModule : public CbmStsElement
      ** If both tCutInNs and tCutInSigma are negative, no time cut is applied.
      **/
     Int_t FindHits(TClonesArray* hitArray, CbmEvent* event = NULL,
+									 Double_t tCutInNs = -1., Double_t tCutInSigma = 4.);
+
+    Int_t FindHitsVector(std::vector<CbmStsHit>* hitArray, CbmEvent* event = NULL,
 									 Double_t tCutInNs = -1., Double_t tCutInSigma = 4.);
 
 

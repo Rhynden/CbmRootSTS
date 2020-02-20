@@ -301,6 +301,34 @@ void CbmStsDigisToHitsModule::ProcessDigis(CbmEvent* event) {
 // -------------------------------------------------------------------------
 
 
+// -----   Process all digis of module   -----------------------------------
+std::vector<CbmStsHit> CbmStsDigisToHitsModule::ProcessDigisAndAbsorbAsVector(CbmEvent* event) {
+
+  // Sort the Digi Buffer by time
+  std::sort(fDigiQueue.begin(), fDigiQueue.end(), [] (std::tuple<const CbmStsDigi*, Int_t> digi1, std::tuple<const CbmStsDigi*, Int_t> digi2) {return std::get<1>(digi1) < std::get<1>(digi2);});
+
+  //Process each individual digi
+  for (UInt_t iDigi = 0; iDigi < fDigiQueue.size(); iDigi++){
+    ProcessDigi(std::get<0>(fDigiQueue[iDigi])->GetChannel(), std::get<0>(fDigiQueue[iDigi])->GetTime(), std::get<1>(fDigiQueue[iDigi]));
+  }
+
+  // Process Remaining Digis in channels  
+  for (UShort_t channel = 0; channel < fSize; channel++) {
+    if ( fIndex[channel] == - 1 ) continue;
+    FinishCluster(channel);
+  }
+
+  //Sort clusters by time in module for optimized hit finding
+  fModule->SortClustersByTime();
+
+  // Process Clusters to Hits
+  fModule->FindHitsVector(&fHitOutputVector, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+
+  return fHitOutputVector;
+}
+// -------------------------------------------------------------------------
+
+
 // ----- Process an input digi   -------------------------------------------
 Bool_t CbmStsDigisToHitsModule::ProcessDigi(UShort_t channel, Double_t time,
                                               Int_t index) {

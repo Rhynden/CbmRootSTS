@@ -106,6 +106,62 @@ void CbmStsSensor::CreateHit(Double_t xLocal, Double_t yLocal, Double_t varX,
 // -------------------------------------------------------------------------
 
 
+// -----   Create a new hit   ----------------------------------------------
+void CbmStsSensor::CreateHitVector(Double_t xLocal, Double_t yLocal, Double_t varX,
+		                     Double_t varY, Double_t varXY,
+		                     CbmStsCluster* clusterF, CbmStsCluster* clusterB,
+		                     Double_t du, Double_t dv) {
+
+  // ---  Check output array
+  assert(fHitsVector);
+
+	// --- If a TGeoNode is attached, transform into global coordinate system
+	Double_t local[3] = { xLocal, yLocal, 0.};
+	Double_t global[3];
+	if ( fNode ) fNode->GetMatrix()->LocalToMaster(local, global);
+	else {
+		global[0] = local[0];
+		global[1] = local[1];
+		global[2] = local[2];
+	} //? no TGeoNode available
+
+	// We assume here that the local-to-global transformations is only translation
+	// plus maybe rotation upside down or front-side back. In that case, the
+	// global covariance matrix is the same as the local one.
+	Double_t error[3] = { TMath::Sqrt(varX), TMath::Sqrt(varY), 0.};
+
+
+	// --- Calculate hit time (average of cluster times)
+	Double_t fTime = ( clusterF ? clusterF->GetTime() : 0. );
+    Double_t bTime = ( clusterB ? clusterB->GetTime() : 0. );
+    Double_t hitTime = 0.5 * ( fTime + bTime);
+	Double_t etF = ( clusterF ? clusterF->GetTimeError() : 0. );
+	Double_t etB = ( clusterB ? clusterB->GetTimeError() : 0. );
+	Double_t hitTimeError = 0.5 * TMath::Sqrt( etF*etF + etB*etB );
+
+	// --- Create hit
+	Int_t index = fHitsVector->size();
+	Int_t indexF = ( clusterF ? clusterF->GetIndex() : -1 );
+    Int_t indexB = ( clusterB ? clusterB->GetIndex() : -1 );
+	fHitsVector->emplace_back(
+						  GetAddress(),              // address
+					      global,                // coordinates
+					      error,                 // coordinate error
+					      varXY,                 // covariance xy
+					      indexF,                // front cluster index
+					      indexB,                // back cluster index
+					      hitTime,               // hit time
+					      hitTimeError,          // hit time error
+					      du, dv);
+	if ( fEvent) fEvent->AddData(kStsHit, index);
+
+	LOG(debug2) << GetName() << ": Creating hit at (" << global[0] << ", "
+			        << global[1] << ", " << global[2] << ")";
+	return;
+}
+// -------------------------------------------------------------------------
+
+
 
 // -----   Get the unique address from the sensor name (static)   ----------
 UInt_t CbmStsSensor::GetAddressFromName(TString name) {

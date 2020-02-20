@@ -15,6 +15,7 @@
 #include "CbmStsAddress.h"
 #include "CbmStsCluster.h"
 #include "CbmStsElement.h"
+#include "CbmStsHit.h"
 #include "CbmStsSensorConditions.h"
 
 class TClonesArray;
@@ -78,6 +79,11 @@ class CbmStsSensor : public CbmStsElement
     		       CbmStsCluster* clusterF, CbmStsCluster* clusterB,
     		       Double_t du = 0., Double_t dv = 0.);
 
+    void CreateHitVector(Double_t xLocal, Double_t yLocal,
+    		       Double_t varX, Double_t varY, Double_t varXY,
+    		       CbmStsCluster* clusterF, CbmStsCluster* clusterB,
+    		       Double_t du = 0., Double_t dv = 0.);
+
 
     /** Find hits in sensor
      ** @param clusters  Vector of clusters
@@ -96,6 +102,11 @@ class CbmStsSensor : public CbmStsElement
     virtual Int_t FindHits(std::vector<CbmStsCluster*>& clusters,
                            TClonesArray* hitArray, CbmEvent* event,
                            Double_t tCutInNs, Double_t tCutInSigma) = 0;
+
+    virtual Int_t FindHitsVector(std::vector<CbmStsCluster*>& clusters,
+                                 std::vector<CbmStsHit>* hitArray, CbmEvent* event,
+                                 Double_t tCutInNs,
+																 Double_t tCutInSigma) = 0;
 
 
     /** @brief Get the address from the sensor name (static)
@@ -206,6 +217,7 @@ class CbmStsSensor : public CbmStsElement
     CbmStsSensorConditions*  fConditions;  ///< Operating conditions
     CbmLink* fCurrentLink;  ///< Link to currently processed MCPoint
     TClonesArray* fHits;    ///< Output array for hits. Used in hit finding.
+    std::vector<CbmStsHit>* fHitsVector; //!
     CbmEvent* fEvent;       //! ///< Pointer to current event
 
 

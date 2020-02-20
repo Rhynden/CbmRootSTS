@@ -242,6 +242,126 @@ Int_t CbmStsSensorDssd::FindHits(std::vector<CbmStsCluster*>& clusters,
 // -------------------------------------------------------------------------
 
 
+// -----  Hit finding   ----------------------------------------------------
+Int_t CbmStsSensorDssd::FindHitsVector(std::vector<CbmStsCluster*>& clusters,
+                                 std::vector<CbmStsHit>* hitArray, CbmEvent* event,
+                                 Double_t tCutInNs,
+																 Double_t tCutInSigma) {
+
+  //LOG(INFO) << "clusters size " << clusters.size();
+  //Int_t hitArraySize = hitArray->GetEntriesFast();
+  //LOG(INFO) << "hit array size" << hitArraySize;
+  //LOG(INFO) << "event" << event;
+  //LOG(INFO) << "tCutInNs" << tCutInNs;
+  //LOG(INFO) << "tCutInSigma" << tCutInSigma;
+
+
+  fHitsVector = hitArray;
+  fHitsVector->reserve(5000);
+  //&fHitsVector = hitArray;
+  //fHitsVector
+  //fHits = Convert2(*hitArray);
+  fEvent = event;
+  Int_t nHits = 0;
+
+  Int_t nClusters = clusters.size();
+
+  Int_t nClustersF = 0;
+  Int_t nClustersB = 0;
+
+  //DigisToHits 
+  Double_t maxTimeErrorClustersF = 0.;
+  Double_t maxTimeErrorClustersB = 0.;
+
+
+  // --- Sort clusters into front and back side
+  vector<Int_t> frontClusters;
+  vector<Int_t> backClusters;
+  Int_t side  = -1;         // front or back side
+  for (Int_t iCluster = 0; iCluster < nClusters; iCluster++) {
+    CbmStsCluster* cluster = clusters[iCluster];
+    side = GetSide( cluster->GetPosition() );
+
+    if ( side == 0) {
+      frontClusters.push_back(iCluster);
+      nClustersF++;
+      //DigisToHits
+      if ( cluster->GetTimeError() > maxTimeErrorClustersF ) maxTimeErrorClustersF = cluster->GetTimeError();
+    }
+    else if ( side == 1 ) {
+      backClusters.push_back(iCluster);
+      nClustersB++;
+      //DigisToHits
+      if ( cluster->GetTimeError() > maxTimeErrorClustersB ) maxTimeErrorClustersB = cluster->GetTimeError();
+    }
+    else
+      LOG(fatal) << GetName() << ": Illegal side qualifier " << side;
+  }  // Loop over clusters in module
+  LOG(debug3) << GetName() << ": " << nClusters << " clusters (front "
+      << frontClusters.size() << ", back " << backClusters.size() << ") ";
+
+  // --- Loop over front and back side clusters
+  // DigisToHits
+  Int_t startB = 0;
+  const Double_t max_sigma_both = 4. * TMath::Sqrt(maxTimeErrorClustersF * maxTimeErrorClustersF + maxTimeErrorClustersB * maxTimeErrorClustersB);
+
+  for (Int_t iClusterF = 0; iClusterF < nClustersF; iClusterF++) {
+    CbmStsCluster* clusterF = clusters[frontClusters[iClusterF]];
+
+    Double_t clusterF_Time = clusterF->GetTime();
+
+    Double_t clusterF_TimeError = clusterF->GetTimeError() * clusterF->GetTimeError();
+
+    Double_t max_sigma = 4. * TMath::Sqrt( clusterF_TimeError
+                                    + maxTimeErrorClustersB * maxTimeErrorClustersB );
+
+    for (Int_t iClusterB = startB; iClusterB < nClustersB;   iClusterB++) {
+      CbmStsCluster* clusterB = clusters[backClusters[iClusterB]];
+
+      Double_t timeDiff = clusterF_Time - clusterB->GetTime();
+
+      if ( ( timeDiff > 0 ) && ( timeDiff > max_sigma_both)){
+        startB++;
+        continue;
+      }
+      else if ( ( timeDiff > 0 )  &&  ( timeDiff > max_sigma ) ) {
+          continue;
+      }
+      else if ( ( timeDiff < 0 )  &&  ( fabs(timeDiff) > max_sigma ) ) break;
+
+      // Cut on time difference of the two clusters
+      Double_t timeCut = -1.;
+      if ( tCutInNs > 0. ) timeCut = tCutInNs; // absolute cut value
+      else {
+        if ( tCutInSigma > 0. ) {
+      		Double_t eF = clusterF->GetTimeError();
+      		Double_t eB = clusterB->GetTimeError();
+      		timeCut = tCutInSigma * TMath::Sqrt( eF * eF + eB * eB );
+      	} //? cut calculated from cluster errors
+      }
+      if ( fabs(clusterF->GetTime() - clusterB->GetTime()) > timeCut ) continue;
+
+      // --- Calculate intersection points
+      Int_t nOfHits = IntersectClustersVector(clusterF, clusterB);
+      LOG(debug4) << GetName() << ": Cluster front " << iClusterF
+          << ", cluster back " << iClusterB
+          << ", intersections " << nOfHits;
+      nHits += nOfHits;
+
+    }  // back side clusters
+
+  }  // front side clusters
+
+  LOG(debug3) << GetName() << ": Clusters " << nClusters << " ( "
+      << nClustersF << " / " << nClustersB << " ), hits: " << nHits;
+
+  //*hitArray = Convert(fHits);
+  //hitArray = fHitsVector;
+  return nHits;
+}
+// -------------------------------------------------------------------------
+
+
 
 // -----   Get cluster position at read-out edge   -------------------------
 void CbmStsSensorDssd::GetClusterPosition(Double_t centre,

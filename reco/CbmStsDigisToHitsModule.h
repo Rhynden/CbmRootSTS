@@ -8,6 +8,7 @@
 #include <mutex>
 #include "TNamed.h"
 #include "CbmStsModule.h"
+#include "CbmStsHit.h"
 
 class TClonesArray;
 class CbmStsClusterAnalysis;
@@ -135,6 +136,8 @@ class CbmStsDigisToHitsModule : public TNamed
     }
     void ProcessDigis(CbmEvent* event);
 
+    std::vector<CbmStsHit> ProcessDigisAndAbsorbAsVector(CbmEvent* event);
+
     TClonesArray* GetClusterOutput() { return fClusterOutput;}
     TClonesArray* GetHitOutput() { return fHitOutput;}
 
@@ -160,6 +163,7 @@ class CbmStsDigisToHitsModule : public TNamed
     CbmStsClusterAnalysis* fAna;
     TClonesArray* fClusterOutput;
     TClonesArray* fHitOutput;
+    std::vector<CbmStsHit> fHitOutputVector;
     std::mutex lock;
     //std::vector<Int_t> fDigiIndex;
 

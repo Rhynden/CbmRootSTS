@@ -7,6 +7,8 @@
 
 #include "TStopwatch.h"
 #include "FairTask.h"
+#include "CbmStsHit.h"
+#include "TClonesArray.h"
 #include "CbmStsReco.h"
 
 class TClonesArray;
@@ -156,7 +158,26 @@ class CbmStsDigisToHits : public FairTask
     std::vector<CbmStsDigisToHitsModule*> fModuleIndex;
     Bool_t fClusterOutputMode;
     TClonesArray* fHits;
+    std::vector<CbmStsHit> fHitsVector;
     Bool_t fParallelism_enabled;
+
+    // Convert a vector of CbmStsHits to a TClonesArray of those hits
+    // Needed for correctness evaluation
+    TClonesArray* Convert(std::vector<CbmStsHit> arr)
+    {
+      TClonesArray* tca;
+      tca = new TClonesArray("CbmStsHit", 6e3);
+      Int_t entries = arr.size();
+      if (entries > 0) {
+        for(int i=0; i< entries; ++i) {
+          CbmStsHit hit = static_cast<CbmStsHit>(arr[i]);
+          //tca->AddAt(&hit, i);
+          CbmStsHit* newHit = new ( (*tca)[i] ) CbmStsHit();
+          *newHit = hit;
+        }
+      }
+      return tca;
+    }
 
 
     /** @brief Sort clusters into modules

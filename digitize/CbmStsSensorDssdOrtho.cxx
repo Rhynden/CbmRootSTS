@@ -314,6 +314,63 @@ Int_t CbmStsSensorDssdOrtho::IntersectClusters(CbmStsCluster* clusterF,
 // -------------------------------------------------------------------------
 
 
+// -----   Create hits from two clusters   ---------------------------------
+Int_t CbmStsSensorDssdOrtho::IntersectClustersVector(CbmStsCluster* clusterF,
+                                               CbmStsCluster* clusterB) {
+  // --- Check pointer validity
+  assert(clusterF);
+  assert(clusterB);
+
+  // --- Calculate cluster centre position on readout edge
+  Int_t side  = -1;
+  Double_t xF = -1.;
+  Double_t xB = -1.;
+  GetClusterPosition(clusterF->GetPosition(), xF, side);
+  if ( side != 0 )
+    LOG(fatal) << GetName() << ": Inconsistent side qualifier " << side
+    << " for front side cluster! ";
+  Double_t exF = clusterF->GetPositionError() * fPitch[ side ];
+  Double_t du  = exF;
+  GetClusterPosition(clusterB->GetPosition(), xB, side);
+  if ( side != 1 )
+    LOG(fatal) << GetName() << ": Inconsistent side qualifier " << side
+    << " for back side cluster! ";
+  Double_t exB = clusterB->GetPositionError() * fPitch[ side ];
+  Double_t dv  = exB;
+
+  // --- Should be inside active area
+  if ( ! ( xF >= 0. || xF <= fDx) ) return 0;
+  if ( ! ( xB >= 0. || xB <= fDy) ) return 0;
+
+  // --- Hit counter
+  Int_t nHits = 0;
+
+  // In orthogonal sensor, all pairs of (front, back) cluster have
+  // a single intersection
+  // => exactly one hit!
+
+  // --- Prepare hit coordinates and errors
+  // In the coordinate system with origin at the bottom left corner,
+  // the coordinates in the orthogonal sensor are straighforward.
+  Double_t xC    = xF;   // x coordinate of intersection point
+  Double_t yC    = xB;   // y coordinate of intersection point
+  Double_t varX  = exF * exF;  // variance of xC
+  Double_t varY  = exB * exB;  // variance of yC
+  Double_t varXY = 0.; // covariance xC-yC => independent variables!
+
+  // --- Transform into sensor system with origin at sensor centre
+  xC -= 0.5 * fDx;
+  yC -= 0.5 * fDy;
+
+  // --- Create the hit
+  CreateHitVector( xC, yC, varX, varY, varXY, clusterF, clusterB, du, dv);
+  nHits++;
+
+  return nHits;
+}
+// -------------------------------------------------------------------------
+
+
 
 // -----   Modify the strip pitch   ----------------------------------------
 void CbmStsSensorDssdOrtho::ModifyStripPitch(Double_t pitch) {
@@ -334,7 +391,6 @@ void CbmStsSensorDssdOrtho::ModifyStripPitch(Double_t pitch) {
 
 }
 // -------------------------------------------------------------------------
-
 
 
 // -----   Propagate charge to the readout strips   ------------------------
