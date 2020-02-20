@@ -233,28 +233,6 @@ void CbmStsModule::Digitize(UShort_t channel, CbmStsSignal* signal) {
 
 
 // -----   Find hits   -----------------------------------------------------
-Int_t CbmStsModule::FindHitsVector(std::vector<CbmStsHit>* hitArray, CbmEvent* event,
-                             Double_t tCutInNs, Double_t tCutInSigma) {
-
-  // --- Call FindHits method in each daughter sensor
-  Int_t nHits = 0;
-  //TClonesArray* tca = new TClonesArray("CbmStsHit", 6e3);
-  for (Int_t iSensor = 0; iSensor < GetNofDaughters(); iSensor++) {
-    CbmStsSensor* sensor = dynamic_cast<CbmStsSensor*>(GetDaughter(iSensor));
-    nHits += sensor->FindHitsVector(fClusters, hitArray, event,
-                              tCutInNs, tCutInSigma);
-  }
-
-  //*hitArray = Convert(tca);
-
-  LOG(debug2) << GetName() << ": Clusters " << fClusters.size()
-                  << ", sensors " << GetNofDaughters() << ", hits "
-                  << nHits;
-  return nHits;
-}
-// -------------------------------------------------------------------------
-
-// -----   Find hits   -----------------------------------------------------
 Int_t CbmStsModule::FindHits(TClonesArray* hitArray, CbmEvent* event,
                              Double_t tCutInNs, Double_t tCutInSigma) {
 

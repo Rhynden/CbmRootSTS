@@ -8,8 +8,6 @@
 #include <mutex>
 #include "TNamed.h"
 #include "CbmStsModule.h"
-#include "CbmStsHit.h"
-#include "TClonesArray.h"
 
 class TClonesArray;
 class CbmStsClusterAnalysis;
@@ -130,12 +128,6 @@ class CbmStsDigisToHitsModule : public TNamed
     //DigisToHits
     void AddDigiToQueue(const CbmStsDigi* digi, Int_t digiIndex);
 
-    std::vector<CbmStsHit> ProcessDigisAndAbsorbAsVector(CbmEvent* event)
-    {
-      ProcessDigis(event);
-      return fHitOutputVector;
-    }
-
     TClonesArray* ProcessDigisAndAbsorb(CbmEvent* event)
     {
       ProcessDigis(event);
@@ -168,41 +160,8 @@ class CbmStsDigisToHitsModule : public TNamed
     CbmStsClusterAnalysis* fAna;
     TClonesArray* fClusterOutput;
     TClonesArray* fHitOutput;
-    std::vector<CbmStsHit> fHitOutputVector;
     std::mutex lock;
     //std::vector<Int_t> fDigiIndex;
-
-
-    std::vector<CbmStsHit> Convert(TClonesArray* arr)
-    {
-      std::vector<CbmStsHit> vec;
-      Int_t entries = arr->GetEntriesFast();
-      if (entries > 0) {
-        CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(0));
-        // LOG(info) << "Entries in TCA for data type " << hit->GetName() << ": " << entries;
-      }
-      for(int i=0; i< entries; ++i) {
-        CbmStsHit* hit = static_cast<CbmStsHit*>(arr->At(i));
-        vec.emplace_back(*hit);
-      }
-      return vec;
-    }
-
-    TClonesArray* Convert2(std::vector<CbmStsHit> arr)
-    {
-      TClonesArray* tca;
-      tca = new TClonesArray("CbmStsHit", 6e3);
-      Int_t entries = arr.size();
-      if (entries > 0) {
-        for(int i=0; i< entries; ++i) {
-          CbmStsHit hit = static_cast<CbmStsHit>(arr[i]);
-          //tca->AddAt(&hit, i);
-          CbmStsHit* newHit = new ( (*tca)[i] ) CbmStsHit();
-          *newHit = hit;
-        }
-      }
-      return tca;
-    }
 
 
     /** Check for a matching digi in a given channel

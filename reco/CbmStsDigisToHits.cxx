@@ -7,7 +7,6 @@
 
 #include <cassert>
 #include <iomanip>
-#include <omp.h>
 #include "TClonesArray.h"
 #include "FairEventHeader.h"
 #include "FairRun.h"
@@ -18,7 +17,6 @@
 #include "CbmStsClusterAnalysis.h"
 #include "CbmStsDigisToHitsModule.h"
 #include "CbmStsDigi.h"
-#include "CbmStsHit.h"
 #include "CbmStsDigitizeParameters.h"
 #include "CbmStsModule.h"
 #include "CbmStsSensor.h"
@@ -323,7 +321,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 	Int_t nIgnored = 0;
 
   //Reset even Needed?
-  #pragma omp parallel for schedule(static) if(fParallelism_enabled)
+//  #pragma omp parallel for schedule(static) if(fParallelism_enabled)
   for (UInt_t it = 0; it < fModules.size(); it++){
     fModuleIndex[it]->Reset();
   }
@@ -340,7 +338,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 
   // --- Loop over input digis and distribute them to the different modules/sensors
   Int_t digiIndex = -1;
-  #pragma omp parallel for schedule(static) if(fParallelism_enabled)
+  //#pragma omp parallel for schedule(static) if(fParallelism_enabled)
   for (Int_t iDigi = 0; iDigi < nDigis; iDigi++){
 
     digiIndex = (event ? event->GetIndex(kStsDigi, iDigi) : iDigi);
@@ -375,51 +373,26 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   // from the modules in exactely the same order. Otherwise the reindexing of the cluster ids in the hit
   // objects can't be done
   if (!fClusterOutputMode) {
-    LOG(info) << "Running in parallel without cluster output";
-    LOG(info) << "max threads = " << omp_get_max_threads();
-    //#pragma omp declare reduction(combineHitOutputVector: std::vector<CbmStsHit>: omp_out.size() < omp_in.size() ? omp_out = omp_in.insert(omp_in.end(), std::make_move_iterator(omp_out.begin()), std::make_move_iterator(omp_out.end())) : omp_out = omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
-    #pragma omp declare reduction(combineHitOutputVector: std::vector<CbmStsHit>: omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
     //#pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
-    //TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
+    TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
     //#pragma omp parallel for reduction(combineHitOutput:fHitsCopy) if(fParallelism_enabled)
-    #pragma omp parallel for reduction(combineHitOutputVector:fHitsVector)
-    //#pragma omp parallel for
     for (UInt_t it = 0; it < fModules.size(); it++){
-      if (it == 0) LOG(info) << "threads used = " << omp_get_num_threads();
-      //fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
-      std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
-
-      //fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
-      
-      //fHits->AbsorbObjects(Convert(temp));
-      //fHitsVector.insert(fHitsVector.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
+      fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
     }
-    LOG(info) << "Hit vector size is " << fHitsVector.size();
-    //Convert(fHitsVector);
-    //fHits->AbsorbObjects(Convert(fHitsVector));
-    //fHits->AbsorbObjects(fHitsCopy);  //fHits = fHitsCopy;
+
+    fHits->AbsorbObjects(fHitsCopy);  //fHits = fHitsCopy;
   } else {
 
     // This part can run parallel
-    /*for (UInt_t it = 0; it < fModules.size(); it++){
-      fModuleIndex[it]->ProcessDigis(event);
-    }*/
     for (UInt_t it = 0; it < fModules.size(); it++){
-      //fHitsCopy->AbsorbObjects(fModuleIndex[it]->ProcessDigisAndAbsorb(event));
-      //std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
-      //fHitsVector.insert(fHitsVector.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
+      fModuleIndex[it]->ProcessDigis(event);
     }
-    LOG(info) << "Hit vector size is " << fHitsVector.size();
-    //Convert(fHitsVector);
-    fHits->AbsorbObjects(Convert(fHitsVector));
 
     // Get the hits and the clusters from the modules
     // Set the proper index for the clusters in the hit object
     for (UInt_t it = 0; it < fModules.size(); it++){
       UInt_t hitStartIndex = fHits->GetEntriesFast();
-      //fHits->AbsorbObjects(fModuleIndex[it]->GetHitOutput());
-      std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
-      fHits->AbsorbObjects(Convert(temp));
+      fHits->AbsorbObjects(fModuleIndex[it]->GetHitOutput());
       UInt_t hitStopIndex = fHits->GetEntriesFast();
 
       UInt_t clusterStartIndex = fClusters->GetEntriesFast();
@@ -491,7 +464,7 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
   // --- Screen output
   LOG(debug) << GetName() << ": created " << nClusters << " from index "
       << indexFirst << " to " << indexLast;
-  LOG(info) << GetName() << ": reset " << time1 << ", process digis " << time2
+  LOG(debug) << GetName() << ": reset " << time1 << ", process digis " << time2
       << ", process buffers " << time3 << ", analyse " << time4 << ", register "
       << time5;
 

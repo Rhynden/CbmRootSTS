@@ -71,7 +71,6 @@ CbmStsDigisToHitsModule::CbmStsDigisToHitsModule(UShort_t nChannels,
   , fHitOutput(new TClonesArray("CbmStsHit", 6e3))  
 {
   fDigiQueue.reserve(60000);
-  fHitOutputVector.reserve(100000);
 }
 // -------------------------------------------------------------------------
 
@@ -289,9 +288,8 @@ void CbmStsDigisToHitsModule::ProcessDigis(CbmEvent* event) {
   //LOG(INFO) << "CutInNs = " << fTimeCutClustersInNs << " CutInSigma = " << fTimeCutClustersInSigma;
   LOG(DEBUG) << "Processing module number " << fModule;
   //  Int_t nModuleHits = fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
-  //fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
-  fModule->FindHitsVector(&fHitOutputVector, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
-  //fHitOutput->AbsorbObjects(Convert2(fHitOutputVector));
+  fModule->FindHits(fHitOutput, event, fTimeCutClustersInNs, fTimeCutClustersInSigma);
+
 
   //return fDigiQueue.size(); 
   //return fClusterOutput->GetEntriesFast();

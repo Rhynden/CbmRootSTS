@@ -41,10 +41,10 @@ digitize/CbmStsSignal.cxx;
 # --- Sources in reco
 set (SRCS_RECO
 reco/CbmStsClusterAnalysis.cxx
-#reco/CbmStsClusterFinderModule.cxx
-#reco/CbmStsFindClusters.cxx
-#reco/CbmStsFindHits.cxx
-#reco/CbmStsFindHitsSingleCluster.cxx
+reco/CbmStsClusterFinderModule.cxx
+reco/CbmStsFindClusters.cxx
+reco/CbmStsFindHits.cxx
+reco/CbmStsFindHitsSingleCluster.cxx
 reco/CbmStsDigisToHitsModule.cxx
 reco/CbmStsDigisToHits.cxx
 reco/CbmStsFindTracksEvents.cxx
