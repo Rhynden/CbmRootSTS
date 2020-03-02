@@ -321,7 +321,6 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
 	Int_t nGood    = 0;
 	Int_t nIgnored = 0;
 
-  //Reset even Needed?
   #pragma omp parallel for schedule(static) if(fParallelism_enabled)
   for (UInt_t it = 0; it < fModules.size(); it++){
     fModuleIndex[it]->Reset();
@@ -378,20 +377,31 @@ void CbmStsDigisToHits::ProcessData(CbmEvent* event) {
     //#pragma omp declare reduction(combineHitOutput:TClonesArray*: omp_out->AbsorbObjects(omp_in)) initializer(omp_priv = new TClonesArray("CbmStsHit", 1e1))
     #pragma omp declare reduction(combineHitOutputVector: std::vector<CbmStsHit>: omp_out.insert(omp_out.end(), std::make_move_iterator(omp_in.begin()), std::make_move_iterator(omp_in.end())))
     //TClonesArray* fHitsCopy = new TClonesArray("CbmStsHit", 2000000);
+    std::vector<CbmStsHit> fHitsVectorCopy;
+    // Each Cluster consists of approximately 3 digis
+    fHitsVectorCopy.reserve(static_cast<int>(nDigis/3));
     //#pragma omp parallel for reduction(combineHitOutput:fHitsCopy) if(fParallelism_enabled)
-    #pragma omp parallel for reduction(combineHitOutputVector:fHitsVector) if(fParallelism_enabled)
+
+    #pragma omp parallel for reduction(combineHitOutputVector:fHitsVectorCopy) if(fParallelism_enabled)
     for (UInt_t it = 0; it < fModules.size(); it++){
-      if (it == 0) LOG(info) << "Processing with " << omp_get_max_threads() << " threads";
+      if (it == 0) LOG(info) << "Processing with " << omp_get_num_threads() << " threads";
       // Proces Digis in current modul
       std::vector<CbmStsHit> temp = fModuleIndex[it]->ProcessDigisAndAbsorbAsVector(event);
 
       // Insert new hits from current modul to all hits
-      fHitsVector.insert(fHitsVector.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
+      fHitsVectorCopy.insert(fHitsVectorCopy.end(), std::make_move_iterator(temp.begin()), std::make_move_iterator(temp.end()));
     }
 
-    LOG(info) << "fHitsVector size is " << fHitsVector.size();
+    LOG(info) << "fHitsVectorCopy size is " << fHitsVectorCopy.size();
     // Convert Vector to TClonesArray for comparison reasons only
     //fHits->AbsorbObjects(Convert(fHitsVector));
+    fHitsVector = &fHitsVectorCopy;
+    // Works 
+    //fHits->AbsorbObjects(Convert(*fHitsVector));
+    LOG(info) << "fHitsVector size is " << fHitsVector->size();
+    fHitsVectorCopy.clear();
+    //LOG(info) << "fHitsVectorCopy size is " << fHitsVectorCopy.size();
+    //LOG(info) << "fHitsVector size is " << fHitsVector->size();
     //fHits->AbsorbObjects(fHitsCopy);  //fHits = fHitsCopy;
   } else {
 

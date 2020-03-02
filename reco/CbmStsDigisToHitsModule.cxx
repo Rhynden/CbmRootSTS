@@ -375,6 +375,7 @@ void CbmStsDigisToHitsModule::Reset() {
 
   //DigisToHits
   fModule->ClearClusters();
+  fHitOutputVector.clear();
   fDigiQueue.clear();
   fHitOutput->Clear();
   fClusterOutput->Clear();
